@@ -5,6 +5,7 @@ import SmsRoundedIcon from '@mui/icons-material/SmsRounded';
 import { motion } from 'framer-motion';
 
 import { LabeledSelect, SearchableDropdown, type SearchableOption, type SelectChangeEvent } from '../ui';
+import { elevationShadow, gradients, palette } from '@/theme/palette';
 
 const APPOINTMENTS = [
   {
@@ -13,7 +14,7 @@ const APPOINTMENTS = [
     service: 'Bridal Trial · Hair & Makeup',
     staff: 'Ayesha',
     status: 'Confirmed',
-    color: '#7B2CBF',
+    color: palette.purple,
   },
   {
     time: '11:30',
@@ -21,7 +22,7 @@ const APPOINTMENTS = [
     service: 'Hair Coloring',
     staff: 'Ruvini',
     status: 'Confirmed',
-    color: '#C77DFF',
+    color: palette.orchid,
   },
   {
     time: '13:00',
@@ -29,7 +30,7 @@ const APPOINTMENTS = [
     service: 'Facial · Hydra Glow',
     staff: 'Methika',
     status: 'Walk-in',
-    color: '#D4A574',
+    color: palette.gold,
   },
   {
     time: '14:30',
@@ -37,7 +38,7 @@ const APPOINTMENTS = [
     service: 'Manicure & Pedicure',
     staff: 'Hashini',
     status: 'Confirmed',
-    color: '#E8B4B8',
+    color: palette.rose,
   },
 ];
 
@@ -63,11 +64,9 @@ export default function HeroAppPreview() {
           position: 'relative',
           borderRadius: 4,
           p: { xs: 2.5, sm: 3 },
-          background:
-            'linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(250,246,242,0.95) 100%)',
-          border: `1px solid ${alpha('#1A0F1F', 0.08)}`,
-          boxShadow:
-            '0 30px 80px -20px rgba(123,44,191,0.35), 0 10px 30px -10px rgba(26,15,31,0.15)',
+          background: `linear-gradient(160deg, ${alpha(palette.white, 0.95)} 0%, ${alpha(palette.ivory, 0.95)} 100%)`,
+          border: `1px solid ${alpha(palette.purpleDeep, 0.08)}`,
+          boxShadow: elevationShadow.heroPreviewCard,
           backdropFilter: 'blur(8px)',
         }}
       >
@@ -89,12 +88,14 @@ export default function HeroAppPreview() {
             </Typography>
           </Box>
           <Chip
-            icon={<EventAvailableRoundedIcon sx={{ color: '#10B981 !important' }} />}
+            icon={
+              <EventAvailableRoundedIcon sx={{ color: `${palette.success} !important` }} />
+            }
             label="On track"
             size="small"
             sx={{
-              bgcolor: alpha('#10B981', 0.1),
-              color: '#0E7C5A',
+              bgcolor: alpha(palette.success, 0.1),
+              color: palette.successDark,
               fontWeight: 600,
             }}
           />
@@ -132,8 +133,8 @@ export default function HeroAppPreview() {
                   gap: 2,
                   p: 1.5,
                   borderRadius: 2,
-                  bgcolor: '#fff',
-                  border: `1px solid ${alpha('#1A0F1F', 0.06)}`,
+                  bgcolor: palette.white,
+                  border: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
                   transition: 'all 0.2s ease',
                   '&:hover': {
                     borderColor: alpha(appt.color, 0.4),
@@ -226,9 +227,9 @@ function FloatingSmsCard() {
           p: 2,
           maxWidth: 280,
           borderRadius: 3,
-          bgcolor: '#1A0F1F',
-          color: '#fff',
-          boxShadow: '0 20px 50px -10px rgba(26,15,31,0.4)',
+          bgcolor: palette.purpleDeep,
+          color: palette.white,
+          boxShadow: elevationShadow.floatingSmsCard,
           display: 'flex',
           alignItems: 'flex-start',
           gap: 1.5,
@@ -239,7 +240,7 @@ function FloatingSmsCard() {
             width: 36,
             height: 36,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)',
+            background: gradients.heroCta,
             display: 'grid',
             placeItems: 'center',
             flexShrink: 0,
@@ -281,9 +282,9 @@ function FloatingStatCard() {
         sx={{
           p: 2,
           borderRadius: 3,
-          bgcolor: '#fff',
-          boxShadow: '0 15px 40px -10px rgba(26,15,31,0.2)',
-          border: `1px solid ${alpha('#1A0F1F', 0.06)}`,
+          bgcolor: palette.white,
+          boxShadow: elevationShadow.floatingStatCard,
+          border: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
           minWidth: 180,
           display: { xs: 'none', sm: 'block' },
         }}
@@ -294,7 +295,7 @@ function FloatingStatCard() {
         <Typography variant="h5" sx={{ fontWeight: 700, my: 0.5 }}>
           184 bookings
         </Typography>
-        <Typography variant="caption" sx={{ color: '#10B981', fontWeight: 600 }}>
+        <Typography variant="caption" sx={{ color: palette.success, fontWeight: 600 }}>
           ↑ 23% vs last week
         </Typography>
       </Box>

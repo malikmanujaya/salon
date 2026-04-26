@@ -3,6 +3,7 @@ import Grid from '@mui/material/Grid2';
 import { motion } from 'framer-motion';
 
 import SectionHeading from './SectionHeading';
+import { gradients, palette } from '@/theme/palette';
 
 const STEPS = [
   {
@@ -10,28 +11,28 @@ const STEPS = [
     title: 'Set up your salon in 10 minutes',
     description:
       'Add your services, prices, staff and working hours. Import existing customers from a CSV or paste a phone list.',
-    color: '#7B2CBF',
+    color: palette.purple,
   },
   {
     number: '02',
     title: 'Take bookings without the chaos',
     description:
       'Create appointments from the calendar in seconds. Lumora prevents double-bookings and assigns the right stylist automatically.',
-    color: '#C77DFF',
+    color: palette.orchid,
   },
   {
     number: '03',
     title: 'Customers show up — on time',
     description:
       'Confirmation and reminder SMS go out automatically through Dialog, Mobitel or Notify.lk. No more last-minute no-shows.',
-    color: '#E8B4B8',
+    color: palette.rose,
   },
   {
     number: '04',
     title: 'See what is working, every day',
     description:
       'A clean daily dashboard tells your team what is happening today — and gives you the trends behind every busy week.',
-    color: '#D4A574',
+    color: palette.gold,
   },
 ];
 
@@ -43,8 +44,7 @@ export default function HowItWorks() {
       sx={{
         py: { xs: 10, md: 14 },
         position: 'relative',
-        background:
-          'linear-gradient(180deg, #FAF6F2 0%, #FFFFFF 50%, #FAF6F2 100%)',
+        background: gradients.ivoryWhiteIvory,
         overflow: 'hidden',
       }}
     >
@@ -53,8 +53,7 @@ export default function HowItWorks() {
         sx={{
           position: 'absolute',
           inset: 0,
-          background:
-            'radial-gradient(40% 40% at 90% 30%, rgba(199,125,255,0.10), transparent 60%), radial-gradient(40% 40% at 10% 80%, rgba(232,180,184,0.10), transparent 60%)',
+          background: `radial-gradient(40% 40% at 90% 30%, ${alpha(palette.orchid, 0.1)}, transparent 60%), radial-gradient(40% 40% at 10% 80%, ${alpha(palette.rose, 0.1)}, transparent 60%)`,
           pointerEvents: 'none',
         }}
       />

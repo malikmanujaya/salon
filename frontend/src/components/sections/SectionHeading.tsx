@@ -1,6 +1,8 @@
 import { Box, Typography, alpha } from '@mui/material';
 import { motion } from 'framer-motion';
 
+import { palette } from '@/theme/palette';
+
 type Props = {
   eyebrow: string;
   title: React.ReactNode;
@@ -16,8 +18,8 @@ export default function SectionHeading({
   align = 'center',
   light = false,
 }: Props) {
-  const textColor = light ? '#FAF6F2' : '#1A0F1F';
-  const muted = light ? alpha('#FAF6F2', 0.7) : alpha('#1A0F1F', 0.7);
+  const textColor = light ? palette.ivory : palette.purpleDeep;
+  const muted = light ? alpha(palette.ivory, 0.7) : alpha(palette.purpleDeep, 0.7);
 
   return (
     <Box

@@ -1,4 +1,5 @@
 import { createTheme, alpha } from '@mui/material/styles';
+import { palette } from './theme/palette';
 
 declare module '@mui/material/styles' {
   interface Palette {
@@ -9,43 +10,48 @@ declare module '@mui/material/styles' {
   }
 }
 
-const PURPLE_DEEP = '#1A0F1F';
-const PURPLE = '#7B2CBF';
-const ORCHID = '#C77DFF';
-const ROSE = '#E8B4B8';
-const GOLD = '#D4A574';
-const IVORY = '#FAF6F2';
-
 export const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: PURPLE,
-      light: ORCHID,
-      dark: '#5A189A',
-      contrastText: '#FFFFFF',
+      main: palette.purple,
+      light: palette.orchid,
+      dark: palette.purpleDark,
+      contrastText: palette.white,
     },
     secondary: {
-      main: ROSE,
-      light: '#F4D4D6',
-      dark: '#C48A8E',
-      contrastText: PURPLE_DEEP,
+      main: palette.rose,
+      light: palette.roseLight,
+      dark: palette.roseDark,
+      contrastText: palette.purpleDeep,
     },
     accent: {
-      main: GOLD,
-      light: '#E6C49A',
-      dark: '#B8884F',
-      contrastText: PURPLE_DEEP,
+      main: palette.gold,
+      light: palette.goldLight,
+      dark: palette.goldDark,
+      contrastText: palette.purpleDeep,
+    },
+    success: {
+      main: palette.success,
+      dark: palette.successDark,
+      light: palette.successLight,
+      contrastText: palette.white,
+    },
+    warning: {
+      main: palette.warning,
+      dark: palette.warningDark,
+      light: palette.warningLight,
+      contrastText: palette.purpleDeep,
     },
     background: {
-      default: IVORY,
-      paper: '#FFFFFF',
+      default: palette.ivory,
+      paper: palette.white,
     },
     text: {
-      primary: PURPLE_DEEP,
-      secondary: alpha(PURPLE_DEEP, 0.7),
+      primary: palette.purpleDeep,
+      secondary: alpha(palette.purpleDeep, 0.7),
     },
-    divider: alpha(PURPLE_DEEP, 0.08),
+    divider: alpha(palette.purpleDeep, 0.08),
   },
   shape: {
     borderRadius: 14,
@@ -101,9 +107,9 @@ export const theme = createTheme({
           '&:hover': { boxShadow: 'none' },
         },
         containedPrimary: {
-          background: `linear-gradient(135deg, ${PURPLE} 0%, ${ORCHID} 100%)`,
+          background: `linear-gradient(135deg, ${palette.purple} 0%, ${palette.orchid} 100%)`,
           '&:hover': {
-            background: `linear-gradient(135deg, #5A189A 0%, ${PURPLE} 100%)`,
+            background: `linear-gradient(135deg, ${palette.purpleDark} 0%, ${palette.purple} 100%)`,
           },
         },
       },

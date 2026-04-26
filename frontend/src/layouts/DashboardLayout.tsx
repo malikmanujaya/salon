@@ -33,6 +33,7 @@ import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import type { SvgIconComponent } from '@mui/icons-material';
 
 import { useAuth } from '../context/AuthContext';
+import { gradients, palette } from '@/theme/palette';
 
 const STORAGE_KEY = 'lumora_sidebar_collapsed';
 const DRAWER_EXPANDED = 280;
@@ -334,10 +335,10 @@ export default function DashboardLayout() {
                 width: 40,
                 height: 40,
                 borderRadius: 2,
-                background: 'linear-gradient(135deg, #E8B4B8 0%, #C77DFF 50%, #7B2CBF 100%)',
+                background: gradients.roseOrchidPurple,
                 display: 'grid',
                 placeItems: 'center',
-                color: '#fff',
+                color: palette.white,
                 fontWeight: 800,
                 fontSize: '0.85rem',
                 textDecoration: 'none',
@@ -353,8 +354,8 @@ export default function DashboardLayout() {
             onClick={() => setCollapsed((c) => !c)}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             sx={{
-              border: `1px solid ${alpha('#1A0F1F', 0.08)}`,
-              bgcolor: alpha('#FAF6F2', 0.9),
+              border: `1px solid ${alpha(palette.purpleDeep, 0.08)}`,
+              bgcolor: alpha(palette.ivory, 0.9),
             }}
           >
             {collapsed ? <ChevronRightRoundedIcon fontSize="small" /> : <ChevronLeftRoundedIcon fontSize="small" />}
@@ -406,7 +407,7 @@ export default function DashboardLayout() {
                 py: 1,
                 justifyContent: 'center',
                 px: 1,
-                '&:hover': { bgcolor: alpha('#1A0F1F', 0.06), color: 'error.main' },
+                '&:hover': { bgcolor: alpha(palette.purpleDeep, 0.06), color: 'error.main' },
               }}
             >
               <ListItemIcon sx={{ minWidth: 0, justifyContent: 'center', color: 'inherit' }}>
@@ -423,7 +424,7 @@ export default function DashboardLayout() {
               py: 1,
               justifyContent: 'flex-start',
               px: 2,
-              '&:hover': { bgcolor: alpha('#1A0F1F', 0.06), color: 'error.main' },
+              '&:hover': { bgcolor: alpha(palette.purpleDeep, 0.06), color: 'error.main' },
             }}
           >
             <ListItemIcon sx={{ minWidth: 40, justifyContent: 'center', color: 'inherit' }}>
@@ -437,7 +438,7 @@ export default function DashboardLayout() {
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: alpha('#1A0F1F', 0.02) }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: alpha(palette.purpleDeep, 0.02) }}>
       <Box
         component="header"
         sx={{
@@ -447,9 +448,9 @@ export default function DashboardLayout() {
           left: 0,
           right: 0,
           zIndex: theme.zIndex.appBar,
-          bgcolor: alpha('#FAF6F2', 0.92),
+          bgcolor: alpha(palette.ivory, 0.92),
           backdropFilter: 'blur(12px)',
-          borderBottom: `1px solid ${alpha('#1A0F1F', 0.06)}`,
+          borderBottom: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
         }}
       >
         <Toolbar sx={{ gap: 1 }}>
@@ -472,8 +473,8 @@ export default function DashboardLayout() {
             '& .MuiDrawer-paper': {
               width: drawerWidth,
               boxSizing: 'border-box',
-              borderRight: `1px solid ${alpha('#1A0F1F', 0.06)}`,
-              bgcolor: '#FAF6F2',
+              borderRight: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
+              bgcolor: palette.ivory,
               transition: 'width 0.22s ease',
               overflowX: 'hidden',
             },

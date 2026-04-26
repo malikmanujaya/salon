@@ -2,6 +2,8 @@ import { Box, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
+import { elevationShadow, gradients, palette } from '@/theme/palette';
+
 export default function Logo() {
   return (
     <Box
@@ -26,11 +28,10 @@ export default function Logo() {
             width: 36,
             height: 36,
             borderRadius: '12px',
-            background:
-              'linear-gradient(135deg, #E8B4B8 0%, #C77DFF 50%, #7B2CBF 100%)',
+            background: gradients.roseOrchidPurple,
             display: 'grid',
             placeItems: 'center',
-            boxShadow: '0 8px 24px rgba(123,44,191,0.25)',
+            boxShadow: elevationShadow.logoIcon,
           }}
         >
           <svg
@@ -42,7 +43,7 @@ export default function Logo() {
           >
             <path
               d="M20 42 C 20 28, 32 20, 44 20 C 38 28, 36 36, 32 44 C 28 38, 24 38, 20 42 Z"
-              fill="#fff"
+              fill={palette.white}
               opacity="0.95"
             />
           </svg>

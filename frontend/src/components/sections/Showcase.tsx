@@ -4,6 +4,7 @@ import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { motion } from 'framer-motion';
 
 import SectionHeading from './SectionHeading';
+import { elevationShadow, gradients, palette } from '@/theme/palette';
 
 const POINTS = [
   'SMS through Dialog, Mobitel & Notify.lk',
@@ -29,8 +30,7 @@ export default function Showcase() {
                   <Box
                     component="span"
                     sx={{
-                      background:
-                        'linear-gradient(135deg, #7B2CBF, #E8B4B8)',
+                      background: gradients.showcaseCard,
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
@@ -59,7 +59,7 @@ export default function Showcase() {
                           width: 22,
                           height: 22,
                           borderRadius: '50%',
-                          bgcolor: alpha('#7B2CBF', 0.12),
+                          bgcolor: alpha(palette.purple, 0.12),
                           color: 'primary.main',
                           display: 'grid',
                           placeItems: 'center',
@@ -99,13 +99,13 @@ function CalendarMockup() {
   const STAFF = ['Ayesha', 'Ruvini', 'Methika', 'Hashini'];
   const HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00'];
   const SLOTS: { col: number; row: number; rowSpan: number; label: string; color: string }[] = [
-    { col: 0, row: 0, rowSpan: 2, label: 'Bridal', color: '#7B2CBF' },
-    { col: 1, row: 1, rowSpan: 1, label: 'Color', color: '#C77DFF' },
-    { col: 2, row: 0, rowSpan: 1, label: 'Facial', color: '#D4A574' },
-    { col: 2, row: 3, rowSpan: 2, label: 'Spa', color: '#10B981' },
-    { col: 3, row: 2, rowSpan: 1, label: 'Mani', color: '#E8B4B8' },
-    { col: 1, row: 4, rowSpan: 1, label: 'Cut', color: '#F59E0B' },
-    { col: 0, row: 4, rowSpan: 1, label: 'Trim', color: '#5A189A' },
+    { col: 0, row: 0, rowSpan: 2, label: 'Bridal', color: palette.purple },
+    { col: 1, row: 1, rowSpan: 1, label: 'Color', color: palette.orchid },
+    { col: 2, row: 0, rowSpan: 1, label: 'Facial', color: palette.gold },
+    { col: 2, row: 3, rowSpan: 2, label: 'Spa', color: palette.success },
+    { col: 3, row: 2, rowSpan: 1, label: 'Mani', color: palette.rose },
+    { col: 1, row: 4, rowSpan: 1, label: 'Cut', color: palette.warning },
+    { col: 0, row: 4, rowSpan: 1, label: 'Trim', color: palette.purpleDark },
   ];
 
   return (
@@ -114,9 +114,9 @@ function CalendarMockup() {
         position: 'relative',
         p: 3,
         borderRadius: 4,
-        bgcolor: '#fff',
-        border: `1px solid ${alpha('#1A0F1F', 0.08)}`,
-        boxShadow: '0 30px 80px -30px rgba(123,44,191,0.3)',
+        bgcolor: palette.white,
+        border: `1px solid ${alpha(palette.purpleDeep, 0.08)}`,
+        boxShadow: elevationShadow.showcaseCalendar,
       }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
@@ -133,9 +133,9 @@ function CalendarMockup() {
                 borderRadius: 999,
                 fontSize: '0.78rem',
                 fontWeight: 600,
-                bgcolor: i === 0 ? alpha('#7B2CBF', 0.12) : 'transparent',
+                bgcolor: i === 0 ? alpha(palette.purple, 0.12) : 'transparent',
                 color: i === 0 ? 'primary.main' : 'text.secondary',
-                border: `1px solid ${i === 0 ? alpha('#7B2CBF', 0.2) : 'transparent'}`,
+                border: `1px solid ${i === 0 ? alpha(palette.purple, 0.2) : 'transparent'}`,
               }}
             >
               {v}
@@ -149,8 +149,8 @@ function CalendarMockup() {
           display: 'grid',
           gridTemplateColumns: '60px repeat(4, 1fr)',
           gap: 0,
-          borderTop: `1px solid ${alpha('#1A0F1F', 0.06)}`,
-          borderLeft: `1px solid ${alpha('#1A0F1F', 0.06)}`,
+          borderTop: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
+          borderLeft: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
         }}
       >
         <Box />
@@ -161,9 +161,9 @@ function CalendarMockup() {
               p: 1.25,
               fontWeight: 600,
               fontSize: '0.85rem',
-              borderRight: `1px solid ${alpha('#1A0F1F', 0.06)}`,
-              borderBottom: `1px solid ${alpha('#1A0F1F', 0.06)}`,
-              bgcolor: alpha('#FAF6F2', 0.5),
+              borderRight: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
+              borderBottom: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
+              bgcolor: alpha(palette.ivory, 0.5),
               textAlign: 'center',
             }}
           >
@@ -178,8 +178,8 @@ function CalendarMockup() {
                 p: 1,
                 fontSize: '0.75rem',
                 color: 'text.secondary',
-                borderRight: `1px solid ${alpha('#1A0F1F', 0.06)}`,
-                borderBottom: `1px solid ${alpha('#1A0F1F', 0.06)}`,
+                borderRight: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
+                borderBottom: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
                 textAlign: 'right',
               }}
             >
@@ -192,8 +192,8 @@ function CalendarMockup() {
                   key={ci}
                   sx={{
                     height: 44,
-                    borderRight: `1px solid ${alpha('#1A0F1F', 0.06)}`,
-                    borderBottom: `1px solid ${alpha('#1A0F1F', 0.06)}`,
+                    borderRight: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
+                    borderBottom: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
                     p: 0.5,
                     position: 'relative',
                   }}

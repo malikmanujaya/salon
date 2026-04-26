@@ -6,6 +6,7 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email';
 
 import Logo from '../brand/Logo';
+import { palette } from '@/theme/palette';
 
 const COLUMNS = [
   {
@@ -32,8 +33,8 @@ export default function Footer() {
       component="footer"
       sx={{
         position: 'relative',
-        bgcolor: '#1A0F1F',
-        color: alpha('#FAF6F2', 0.85),
+        bgcolor: palette.purpleDeep,
+        color: alpha(palette.ivory, 0.85),
         pt: { xs: 8, md: 12 },
         pb: 4,
         overflow: 'hidden',
@@ -44,8 +45,7 @@ export default function Footer() {
         sx={{
           position: 'absolute',
           inset: 0,
-          background:
-            'radial-gradient(60% 50% at 90% 0%, rgba(199,125,255,0.18), transparent 60%), radial-gradient(50% 50% at 0% 100%, rgba(232,180,184,0.10), transparent 60%)',
+          background: `radial-gradient(60% 50% at 90% 0%, ${alpha(palette.orchid, 0.18)}, transparent 60%), radial-gradient(50% 50% at 0% 100%, ${alpha(palette.rose, 0.1)}, transparent 60%)`,
           pointerEvents: 'none',
         }}
       />
@@ -57,7 +57,7 @@ export default function Footer() {
             </Box>
             <Typography
               variant="body2"
-              sx={{ color: alpha('#FAF6F2', 0.7), maxWidth: 360, mb: 3 }}
+              sx={{ color: alpha(palette.ivory, 0.7), maxWidth: 360, mb: 3 }}
             >
               Lumora helps Sri Lankan salons run stress-free days — bookings,
               staff, customers and SMS reminders, all in one place.
@@ -68,11 +68,11 @@ export default function Footer() {
                   <IconButton
                     key={i}
                     sx={{
-                      color: alpha('#FAF6F2', 0.85),
-                      bgcolor: alpha('#FAF6F2', 0.06),
+                      color: alpha(palette.ivory, 0.85),
+                      bgcolor: alpha(palette.ivory, 0.06),
                       '&:hover': {
-                        bgcolor: alpha('#C77DFF', 0.2),
-                        color: '#fff',
+                        bgcolor: alpha(palette.orchid, 0.2),
+                        color: palette.white,
                       },
                     }}
                     size="small"
@@ -89,7 +89,7 @@ export default function Footer() {
               <Typography
                 variant="overline"
                 sx={{
-                  color: '#C77DFF',
+                  color: palette.orchid,
                   letterSpacing: '0.12em',
                   fontWeight: 700,
                 }}
@@ -104,10 +104,10 @@ export default function Footer() {
                     href="#"
                     variant="body2"
                     sx={{
-                      color: alpha('#FAF6F2', 0.75),
+                      color: alpha(palette.ivory, 0.75),
                       textDecoration: 'none',
                       transition: 'color 0.2s ease',
-                      '&:hover': { color: '#fff' },
+                      '&:hover': { color: palette.white },
                     }}
                   >
                     {link}
@@ -118,7 +118,7 @@ export default function Footer() {
           ))}
         </Grid>
 
-        <Divider sx={{ my: 5, borderColor: alpha('#FAF6F2', 0.08) }} />
+        <Divider sx={{ my: 5, borderColor: alpha(palette.ivory, 0.08) }} />
 
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
@@ -126,7 +126,7 @@ export default function Footer() {
           alignItems={{ xs: 'flex-start', sm: 'center' }}
           spacing={2}
         >
-          <Typography variant="body2" sx={{ color: alpha('#FAF6F2', 0.55) }}>
+          <Typography variant="body2" sx={{ color: alpha(palette.ivory, 0.55) }}>
             © {new Date().getFullYear()} Lumora. Made with care in Sri Lanka.
           </Typography>
           <Stack direction="row" spacing={3}>
@@ -134,7 +134,7 @@ export default function Footer() {
               component="a"
               href="#"
               variant="body2"
-              sx={{ color: alpha('#FAF6F2', 0.6), '&:hover': { color: '#fff' } }}
+              sx={{ color: alpha(palette.ivory, 0.6), '&:hover': { color: palette.white } }}
             >
               Privacy
             </Typography>
@@ -142,7 +142,7 @@ export default function Footer() {
               component="a"
               href="#"
               variant="body2"
-              sx={{ color: alpha('#FAF6F2', 0.6), '&:hover': { color: '#fff' } }}
+              sx={{ color: alpha(palette.ivory, 0.6), '&:hover': { color: palette.white } }}
             >
               Terms
             </Typography>
@@ -150,7 +150,7 @@ export default function Footer() {
               component="a"
               href="#"
               variant="body2"
-              sx={{ color: alpha('#FAF6F2', 0.6), '&:hover': { color: '#fff' } }}
+              sx={{ color: alpha(palette.ivory, 0.6), '&:hover': { color: palette.white } }}
             >
               Status
             </Typography>

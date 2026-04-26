@@ -26,6 +26,7 @@ import { motion } from 'framer-motion';
 import { LabeledTextField } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getApiErrorMessage } from '../lib/apiError';
+import { elevationShadow, gradients, palette } from '@/theme/palette';
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -100,9 +101,8 @@ export default function SignupPage() {
           overflow: 'hidden',
           px: 6,
           py: 8,
-          background:
-            'linear-gradient(165deg, #5A189A 0%, #7B2CBF 42%, #C77DFF 88%, #E8B4B8 100%)',
-          color: '#1A0F1F',
+          background: gradients.signupPanel,
+          color: palette.purpleDeep,
         }}
       >
         <Box
@@ -110,8 +110,7 @@ export default function SignupPage() {
           sx={{
             position: 'absolute',
             inset: 0,
-            background:
-              'radial-gradient(60% 50% at 12% 18%, rgba(250,246,242,0.45), transparent 55%), radial-gradient(45% 40% at 95% 85%, rgba(26,15,31,0.12), transparent 50%)',
+            background: `radial-gradient(60% 50% at 12% 18%, ${alpha(palette.ivory, 0.45)}, transparent 55%), radial-gradient(45% 40% at 95% 85%, ${alpha(palette.purpleDeep, 0.12)}, transparent 50%)`,
             pointerEvents: 'none',
           }}
         />
@@ -160,8 +159,8 @@ export default function SignupPage() {
               mb: 3,
               p: 2,
               borderRadius: 3,
-              background: `linear-gradient(135deg, ${alpha('#7B2CBF', 0.12)}, ${alpha('#E8B4B8', 0.15)})`,
-              border: `1px solid ${alpha('#7B2CBF', 0.12)}`,
+              background: `linear-gradient(135deg, ${alpha(palette.purple, 0.12)}, ${alpha(palette.rose, 0.15)})`,
+              border: `1px solid ${alpha(palette.purple, 0.12)}`,
             }}
           >
             <Typography variant="subtitle2" fontWeight={700} color="primary.main">
@@ -198,8 +197,8 @@ export default function SignupPage() {
               p: { xs: 0, sm: 3.5 },
               borderRadius: 3,
               bgcolor: { xs: 'transparent', sm: 'background.paper' },
-              border: { xs: 'none', sm: `1px solid ${alpha('#1A0F1F', 0.08)}` },
-              boxShadow: { xs: 'none', sm: '0 24px 48px -24px rgba(26,15,31,0.12)' },
+              border: { xs: 'none', sm: `1px solid ${alpha(palette.purpleDeep, 0.08)}` },
+              boxShadow: { xs: 'none', sm: elevationShadow.authFormPaper },
             }}
           >
             <Stack spacing={2}>

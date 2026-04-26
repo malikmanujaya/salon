@@ -15,6 +15,7 @@ import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 
 import { EmptyState } from './EmptyState';
+import { palette } from '@/theme/palette';
 
 export type AppTableColumn<Row extends { id: string }> = {
   id: keyof Row | string;
@@ -94,7 +95,7 @@ export function AppDataTable<Row extends { id: string }>({
                   sx={{
                     minWidth: col.minWidth,
                     fontWeight: 700,
-                    bgcolor: alpha('#7B2CBF', 0.04),
+                    bgcolor: alpha(palette.purple, 0.04),
                     color: 'text.secondary',
                     fontSize: '0.75rem',
                     letterSpacing: '0.06em',
@@ -105,7 +106,7 @@ export function AppDataTable<Row extends { id: string }>({
                 </TableCell>
               ))}
               {hasActions ? (
-                <TableCell align="right" sx={{ width: 108, bgcolor: alpha('#7B2CBF', 0.04) }}>
+                <TableCell align="right" sx={{ width: 108, bgcolor: alpha(palette.purple, 0.04) }}>
                   <Typography variant="caption" fontWeight={700} color="text.secondary" letterSpacing="0.06em">
                     Actions
                   </Typography>

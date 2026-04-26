@@ -4,6 +4,7 @@ import FormatQuoteRoundedIcon from '@mui/icons-material/FormatQuoteRounded';
 import { motion } from 'framer-motion';
 
 import SectionHeading from './SectionHeading';
+import { palette } from '@/theme/palette';
 
 const TESTIMONIALS = [
   {
@@ -12,7 +13,7 @@ const TESTIMONIALS = [
     name: 'Anjali Perera',
     role: 'Owner, Glamour Studio · Colombo',
     initial: 'A',
-    color: '#7B2CBF',
+    color: palette.purple,
   },
   {
     quote:
@@ -20,7 +21,7 @@ const TESTIMONIALS = [
     name: 'Dilshan Rajapaksa',
     role: 'Manager, Bella Bridal · Kandy',
     initial: 'D',
-    color: '#D4A574',
+    color: palette.gold,
   },
   {
     quote:
@@ -28,7 +29,7 @@ const TESTIMONIALS = [
     name: 'Methika De Silva',
     role: 'Senior Stylist, Studio Senorita · Galle',
     initial: 'M',
-    color: '#E8B4B8',
+    color: palette.rose,
   },
 ];
 
@@ -40,7 +41,7 @@ export default function Testimonials() {
       sx={{
         py: { xs: 10, md: 14 },
         position: 'relative',
-        bgcolor: alpha('#fff', 0.6),
+        bgcolor: alpha(palette.white, 0.6),
       }}
     >
       <Container>
@@ -65,8 +66,8 @@ export default function Testimonials() {
                     height: '100%',
                     p: { xs: 3, md: 4 },
                     borderRadius: 3,
-                    bgcolor: '#fff',
-                    border: `1px solid ${alpha('#1A0F1F', 0.06)}`,
+                    bgcolor: palette.white,
+                    border: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
                     position: 'relative',
                     transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                     '&:hover': {

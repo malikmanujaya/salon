@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import type { SvgIconComponent } from '@mui/icons-material';
 
 import SectionHeading from './SectionHeading';
+import { palette } from '@/theme/palette';
 
 type Feature = {
   icon: SvgIconComponent;
@@ -26,56 +27,56 @@ const FEATURES: Feature[] = [
     title: 'Smart bookings',
     description:
       'Create, edit and reschedule appointments in seconds. Double-bookings are prevented automatically across staff and services.',
-    color: '#7B2CBF',
+    color: palette.purple,
   },
   {
     icon: GroupsRoundedIcon,
     title: 'Staff & schedules',
     description:
       'Working hours, lunch breaks, leave days, services per stylist — all in one calm calendar your team will actually use.',
-    color: '#C77DFF',
+    color: palette.orchid,
   },
   {
     icon: PersonPinRoundedIcon,
     title: 'Customer CRM',
     description:
       'Search by phone in seconds. See every visit, every preference, every note — so loyal customers feel remembered.',
-    color: '#E8B4B8',
+    color: palette.rose,
   },
   {
     icon: SmsRoundedIcon,
     title: 'SMS that arrive',
     description:
       'Confirmations and reminders via Dialog, Mobitel, Notify.lk or Twilio. Pick the provider that works for your salon.',
-    color: '#D4A574',
+    color: palette.gold,
   },
   {
     icon: StyleRoundedIcon,
     title: 'Services & catalog',
     description:
       'Categories, durations, prices, assigned staff. Update once and it flows through bookings, invoices and reminders.',
-    color: '#5A189A',
+    color: palette.purpleDark,
   },
   {
     icon: InsightsRoundedIcon,
     title: 'Daily dashboard',
     description:
       'Today, this week, no-shows, top services, busiest stylists. Know how the salon is doing — at a glance.',
-    color: '#10B981',
+    color: palette.success,
   },
   {
     icon: StoreMallDirectoryRoundedIcon,
     title: 'Multi-branch ready',
     description:
       'Built tenant-first. Start with one branch and expand to a chain without ever migrating your data.',
-    color: '#F59E0B',
+    color: palette.warning,
   },
   {
     icon: ShieldRoundedIcon,
     title: 'Roles & audit logs',
     description:
       'Owner, receptionist, stylist — each with the right access. Every important change is logged for trust and recovery.',
-    color: '#1A0F1F',
+    color: palette.purpleDeep,
   },
 ];
 
@@ -116,8 +117,8 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
           height: '100%',
           p: 3.5,
           borderRadius: 3,
-          bgcolor: '#fff',
-          border: `1px solid ${alpha('#1A0F1F', 0.06)}`,
+          bgcolor: palette.white,
+          border: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
           transition: 'all 0.3s ease',
           position: 'relative',
           overflow: 'hidden',

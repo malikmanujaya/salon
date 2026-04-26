@@ -3,6 +3,7 @@ import { Box, Container, Button, alpha } from '@mui/material';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 
 import Logo from '../components/brand/Logo';
+import { palette } from '@/theme/palette';
 
 export default function AuthLayout() {
   return (
@@ -19,8 +20,8 @@ export default function AuthLayout() {
         sx={{
           py: 2.25,
           px: { xs: 2, sm: 3 },
-          borderBottom: `1px solid ${alpha('#1A0F1F', 0.06)}`,
-          bgcolor: alpha('#FAF6F2', 0.8),
+          borderBottom: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
+          bgcolor: alpha(palette.ivory, 0.8),
           backdropFilter: 'blur(12px)',
         }}
       >

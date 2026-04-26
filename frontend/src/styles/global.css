@@ -6,7 +6,7 @@ body,
 
 body {
   margin: 0;
-  background-color: #faf6f2;
+  background-color: var(--lum-ivory);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -17,8 +17,8 @@ body {
 }
 
 ::selection {
-  background: #c77dff;
-  color: #ffffff;
+  background: var(--lum-orchid);
+  color: var(--lum-white);
 }
 
 a {
@@ -34,9 +34,9 @@ a {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(123, 44, 191, 0.25);
+  background: var(--lum-scrollbar-thumb);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(123, 44, 191, 0.45);
+  background: var(--lum-scrollbar-thumb-hover);
 }

@@ -14,7 +14,10 @@ import '@fontsource/playfair-display/700.css';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { theme } from './theme';
+import { applyThemeCssVariables } from './theme/palette';
 import './styles/global.css';
+
+applyThemeCssVariables();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

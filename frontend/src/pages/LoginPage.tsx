@@ -24,6 +24,7 @@ import { motion } from 'framer-motion';
 import { LabeledTextField } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getApiErrorMessage } from '../lib/apiError';
+import { elevationShadow, gradients, palette } from '@/theme/palette';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -78,9 +79,8 @@ export default function LoginPage() {
           overflow: 'hidden',
           px: 6,
           py: 8,
-          background:
-            'linear-gradient(155deg, #1A0F1F 0%, #3C096C 38%, #7B2CBF 72%, #9D4EDD 100%)',
-          color: '#FAF6F2',
+          background: gradients.loginPanel,
+          color: palette.ivory,
         }}
       >
         <Box
@@ -88,15 +88,14 @@ export default function LoginPage() {
           sx={{
             position: 'absolute',
             inset: 0,
-            background:
-              'radial-gradient(55% 45% at 90% 12%, rgba(232,180,184,0.35), transparent 55%), radial-gradient(50% 50% at 0% 88%, rgba(212,165,116,0.22), transparent 55%)',
+            background: `radial-gradient(55% 45% at 90% 12%, ${alpha(palette.rose, 0.35)}, transparent 55%), radial-gradient(50% 50% at 0% 88%, ${alpha(palette.gold, 0.22)}, transparent 55%)`,
             pointerEvents: 'none',
           }}
         />
         <Box sx={{ position: 'relative', maxWidth: 400 }}>
           <Typography
             variant="overline"
-            sx={{ color: alpha('#FAF6F2', 0.75), letterSpacing: '0.2em', fontWeight: 700 }}
+            sx={{ color: alpha(palette.ivory, 0.75), letterSpacing: '0.2em', fontWeight: 700 }}
           >
             Lumora
           </Typography>
@@ -107,13 +106,13 @@ export default function LoginPage() {
               mb: 2,
               fontFamily: '"Playfair Display", Georgia, serif',
               fontWeight: 700,
-              color: '#FAF6F2',
+              color: palette.ivory,
               lineHeight: 1.15,
             }}
           >
             Welcome back to your salon command centre.
           </Typography>
-          <Typography variant="body1" sx={{ color: alpha('#FAF6F2', 0.88), lineHeight: 1.75 }}>
+          <Typography variant="body1" sx={{ color: alpha(palette.ivory, 0.88), lineHeight: 1.75 }}>
             Bookings, staff, customers, and reminders — sign in to pick up where you left off.
           </Typography>
         </Box>
@@ -142,8 +141,8 @@ export default function LoginPage() {
               mb: 3,
               p: 2,
               borderRadius: 3,
-              background: `linear-gradient(135deg, ${alpha('#7B2CBF', 0.12)}, ${alpha('#C77DFF', 0.08)})`,
-              border: `1px solid ${alpha('#7B2CBF', 0.15)}`,
+              background: `linear-gradient(135deg, ${alpha(palette.purple, 0.12)}, ${alpha(palette.orchid, 0.08)})`,
+              border: `1px solid ${alpha(palette.purple, 0.15)}`,
             }}
           >
             <Typography variant="subtitle2" fontWeight={700} color="primary.main">
@@ -180,8 +179,8 @@ export default function LoginPage() {
               p: { xs: 0, sm: 3.5 },
               borderRadius: 3,
               bgcolor: { xs: 'transparent', sm: 'background.paper' },
-              border: { xs: 'none', sm: `1px solid ${alpha('#1A0F1F', 0.08)}` },
-              boxShadow: { xs: 'none', sm: '0 24px 48px -24px rgba(26,15,31,0.12)' },
+              border: { xs: 'none', sm: `1px solid ${alpha(palette.purpleDeep, 0.08)}` },
+              boxShadow: { xs: 'none', sm: elevationShadow.authFormPaper },
             }}
           >
             <Stack spacing={2.25}>

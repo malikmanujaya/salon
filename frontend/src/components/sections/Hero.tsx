@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
 
 import HeroAppPreview from './HeroAppPreview';
+import { gradients, palette } from '@/theme/palette';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -43,13 +44,13 @@ export default function Hero() {
               custom={0}
             >
               <Chip
-                icon={<StarRoundedIcon sx={{ color: '#D4A574 !important' }} />}
+                icon={<StarRoundedIcon sx={{ color: `${palette.gold} !important` }} />}
                 label="Built for Sri Lanka's premier salons"
                 sx={{
-                  bgcolor: alpha('#D4A574', 0.12),
+                  bgcolor: alpha(palette.gold, 0.12),
                   color: 'text.primary',
                   fontWeight: 600,
-                  border: `1px solid ${alpha('#D4A574', 0.3)}`,
+                  border: `1px solid ${alpha(palette.gold, 0.3)}`,
                   px: 0.5,
                   mb: 3,
                 }}
@@ -67,8 +68,7 @@ export default function Hero() {
                 <Box
                   component="span"
                   sx={{
-                    background:
-                      'linear-gradient(135deg, #C77DFF 0%, #7B2CBF 50%, #E8B4B8 100%)',
+                    background: gradients.heroHeading,
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
@@ -129,10 +129,10 @@ export default function Hero() {
                     py: 1.5,
                     px: 2.5,
                     fontSize: '1rem',
-                    borderColor: alpha('#1A0F1F', 0.2),
+                    borderColor: alpha(palette.purpleDeep, 0.2),
                     '&:hover': {
                       borderColor: 'primary.main',
-                      bgcolor: alpha('#7B2CBF', 0.04),
+                      bgcolor: alpha(palette.purple, 0.04),
                     },
                   }}
                 >
@@ -155,7 +155,7 @@ export default function Hero() {
                   <Box
                     sx={{
                       width: 1,
-                      bgcolor: alpha('#1A0F1F', 0.15),
+                      bgcolor: alpha(palette.purpleDeep, 0.15),
                       mx: 0,
                     }}
                   />
@@ -220,8 +220,7 @@ function BackgroundDecor() {
         sx={{
           position: 'absolute',
           inset: 0,
-          background:
-            'radial-gradient(60% 60% at 80% 0%, rgba(199,125,255,0.20), transparent 60%), radial-gradient(50% 60% at 0% 30%, rgba(232,180,184,0.20), transparent 60%), radial-gradient(40% 40% at 50% 100%, rgba(212,165,116,0.12), transparent 60%)',
+          background: `radial-gradient(60% 60% at 80% 0%, ${alpha(palette.orchid, 0.2)}, transparent 60%), radial-gradient(50% 60% at 0% 30%, ${alpha(palette.rose, 0.2)}, transparent 60%), radial-gradient(40% 40% at 50% 100%, ${alpha(palette.gold, 0.12)}, transparent 60%)`,
           pointerEvents: 'none',
         }}
       />
@@ -230,8 +229,7 @@ function BackgroundDecor() {
         sx={{
           position: 'absolute',
           inset: 0,
-          backgroundImage:
-            'linear-gradient(rgba(123,44,191,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(123,44,191,0.05) 1px, transparent 1px)',
+          backgroundImage: `linear-gradient(${alpha(palette.purple, 0.05)} 1px, transparent 1px), linear-gradient(90deg, ${alpha(palette.purple, 0.05)} 1px, transparent 1px)`,
           backgroundSize: '48px 48px',
           maskImage:
             'radial-gradient(ellipse at center, black 30%, transparent 75%)',

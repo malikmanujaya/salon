@@ -1,6 +1,8 @@
 import { Box, Container, Typography, Stack, alpha } from '@mui/material';
 import { motion } from 'framer-motion';
 
+import { palette } from '@/theme/palette';
+
 const SALONS = [
   'Glamour Studio',
   'Ramani Fernando',
@@ -16,9 +18,9 @@ export default function TrustedBy() {
       component="section"
       sx={{
         py: { xs: 5, md: 6 },
-        borderTop: `1px solid ${alpha('#1A0F1F', 0.06)}`,
-        borderBottom: `1px solid ${alpha('#1A0F1F', 0.06)}`,
-        bgcolor: alpha('#fff', 0.5),
+        borderTop: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
+        borderBottom: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
+        bgcolor: alpha(palette.white, 0.5),
       }}
     >
       <Container>
@@ -64,7 +66,7 @@ export default function TrustedBy() {
                     fontFamily: '"Playfair Display", serif',
                     fontStyle: 'italic',
                     fontWeight: 500,
-                    color: alpha('#1A0F1F', 0.55),
+                    color: alpha(palette.purpleDeep, 0.55),
                     fontSize: '1.05rem',
                     textAlign: 'center',
                     transition: 'color 0.2s ease',

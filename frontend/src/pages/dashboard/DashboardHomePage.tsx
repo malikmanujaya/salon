@@ -7,6 +7,7 @@ import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
 import { DashboardModuleDemo } from '../../components/dashboard/DashboardModuleDemo';
 import { PageHeader } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
+import { palette } from '@/theme/palette';
 
 function StatCard({
   title,
@@ -41,7 +42,7 @@ function StatCard({
             borderRadius: 2,
             display: 'grid',
             placeItems: 'center',
-            bgcolor: alpha('#7B2CBF', 0.12),
+            bgcolor: alpha(palette.purple, 0.12),
             color: 'primary.main',
           }}
         >

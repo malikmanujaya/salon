@@ -3,6 +3,7 @@ import { Box, Paper, Typography, alpha } from '@mui/material';
 import ConstructionRoundedIcon from '@mui/icons-material/ConstructionRounded';
 
 import { DashboardModuleDemo } from '../../components/dashboard/DashboardModuleDemo';
+import { palette } from '@/theme/palette';
 
 const SECTIONS: Record<string, { title: string; body: string }> = {
   '/dashboard/bookings': {
@@ -66,7 +67,7 @@ export default function DashboardPlaceholderPage() {
             flexShrink: 0,
             display: 'grid',
             placeItems: 'center',
-            bgcolor: alpha('#7B2CBF', 0.1),
+            bgcolor: alpha(palette.purple, 0.1),
             color: 'primary.main',
           }}
         >

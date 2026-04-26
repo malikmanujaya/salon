@@ -21,6 +21,7 @@ import { Link as RouterLink } from 'react-router-dom';
 
 import Logo from '../brand/Logo';
 import { useAuth } from '../../context/AuthContext';
+import { palette } from '@/theme/palette';
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
@@ -50,12 +51,10 @@ export default function Navbar() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
         sx={{
-          bgcolor: scrolled
-            ? alpha('#FAF6F2', 0.85)
-            : 'transparent',
+          bgcolor: scrolled ? alpha(palette.ivory, 0.85) : 'transparent',
           backdropFilter: scrolled ? 'saturate(180%) blur(14px)' : 'none',
           borderBottom: scrolled
-            ? `1px solid ${alpha('#1A0F1F', 0.06)}`
+            ? `1px solid ${alpha(palette.purpleDeep, 0.06)}`
             : '1px solid transparent',
           color: 'text.primary',
           transition: 'background-color 0.3s ease, border-color 0.3s ease',
