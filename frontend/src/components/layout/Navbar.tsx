@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
 
 import Logo from '../brand/Logo';
+import { useAuth } from '../../context/AuthContext';
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
@@ -28,6 +29,7 @@ const NAV_LINKS = [
 ];
 
 export default function Navbar() {
+  const { user, loading: authLoading } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -88,17 +90,25 @@ export default function Navbar() {
               spacing={1.5}
               sx={{ display: { xs: 'none', md: 'flex' } }}
             >
-              <Button
-                component={RouterLink}
-                to="/login"
-                color="inherit"
-                sx={{ color: 'text.primary' }}
-              >
-                Sign in
-              </Button>
-              <Button component={RouterLink} to="/signup" variant="contained" color="primary">
-                Create account
-              </Button>
+              {!authLoading && user ? (
+                <Button component={RouterLink} to="/dashboard" variant="contained" color="primary">
+                  Dashboard
+                </Button>
+              ) : !authLoading ? (
+                <>
+                  <Button
+                    component={RouterLink}
+                    to="/login"
+                    color="inherit"
+                    sx={{ color: 'text.primary' }}
+                  >
+                    Sign in
+                  </Button>
+                  <Button component={RouterLink} to="/signup" variant="contained" color="primary">
+                    Create account
+                  </Button>
+                </>
+              ) : null}
             </Stack>
             <IconButton
               edge="end"
@@ -158,26 +168,41 @@ export default function Navbar() {
           </List>
         </AnimatePresence>
         <Stack spacing={1.5} sx={{ mt: 3, px: 2 }}>
-          <Button
-            component={RouterLink}
-            to="/login"
-            variant="outlined"
-            color="primary"
-            fullWidth
-            onClick={() => setOpen(false)}
-          >
-            Sign in
-          </Button>
-          <Button
-            component={RouterLink}
-            to="/signup"
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={() => setOpen(false)}
-          >
-            Create account
-          </Button>
+          {!authLoading && user ? (
+            <Button
+              component={RouterLink}
+              to="/dashboard"
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={() => setOpen(false)}
+            >
+              Dashboard
+            </Button>
+          ) : !authLoading ? (
+            <>
+              <Button
+                component={RouterLink}
+                to="/login"
+                variant="outlined"
+                color="primary"
+                fullWidth
+                onClick={() => setOpen(false)}
+              >
+                Sign in
+              </Button>
+              <Button
+                component={RouterLink}
+                to="/signup"
+                variant="contained"
+                color="primary"
+                fullWidth
+                onClick={() => setOpen(false)}
+              >
+                Create account
+              </Button>
+            </>
+          ) : null}
         </Stack>
       </Drawer>
 

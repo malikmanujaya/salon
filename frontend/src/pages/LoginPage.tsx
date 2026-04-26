@@ -1,9 +1,8 @@
-import { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  TextField,
   Button,
   Stack,
   InputAdornment,
@@ -13,6 +12,7 @@ import {
   Link,
   alpha,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
@@ -21,18 +21,50 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { motion } from 'framer-motion';
 
+import { LabeledTextField } from '../components/ui';
+import { useAuth } from '../context/AuthContext';
+import { getApiErrorMessage } from '../lib/apiError';
+
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
+  const { user, loading: authLoading, login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
-  const [infoBanner, setInfoBanner] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(from, { replace: true });
+    }
+  }, [authLoading, user, navigate, from]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setInfoBanner('Sign-in will connect to the API once authentication is enabled on the backend.');
-    // Wire to NestJS auth when ready
+    setError(null);
+    setSubmitting(true);
+    try {
+      await login(email, password, remember);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to sign in.'));
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Grid container sx={{ flex: 1, minHeight: { xs: 'auto', md: 'calc(100vh - 73px)' } }}>
@@ -135,9 +167,9 @@ export default function LoginPage() {
             </Link>
           </Typography>
 
-          {infoBanner && (
-            <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setInfoBanner(null)}>
-              {infoBanner}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError(null)}>
+              {error}
             </Alert>
           )}
 
@@ -153,7 +185,7 @@ export default function LoginPage() {
             }}
           >
             <Stack spacing={2.25}>
-              <TextField
+              <LabeledTextField
                 label="Work email"
                 type="email"
                 name="email"
@@ -161,7 +193,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                fullWidth
+                disabled={submitting}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -170,7 +202,7 @@ export default function LoginPage() {
                   ),
                 }}
               />
-              <TextField
+              <LabeledTextField
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -178,7 +210,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                fullWidth
+                disabled={submitting}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -205,16 +237,25 @@ export default function LoginPage() {
                       checked={remember}
                       onChange={(e) => setRemember(e.target.checked)}
                       color="primary"
+                      disabled={submitting}
                     />
                   }
-                  label="Remember me"
+                  label="Stay signed in"
                 />
                 <Link href="#" variant="body2" fontWeight={600} underline="hover">
                   Forgot password?
                 </Link>
               </Stack>
-              <Button type="submit" variant="contained" color="primary" size="large" fullWidth sx={{ py: 1.35 }}>
-                Sign in
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                size="large"
+                fullWidth
+                disabled={submitting}
+                sx={{ py: 1.35 }}
+              >
+                {submitting ? <CircularProgress size={22} color="inherit" /> : 'Sign in'}
               </Button>
             </Stack>
           </Box>

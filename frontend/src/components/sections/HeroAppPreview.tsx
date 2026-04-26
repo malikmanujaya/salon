@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Box, Stack, Typography, Avatar, Chip, alpha } from '@mui/material';
 import EventAvailableRoundedIcon from '@mui/icons-material/EventAvailableRounded';
 import SmsRoundedIcon from '@mui/icons-material/SmsRounded';
 import { motion } from 'framer-motion';
+
+import { LabeledSelect, SearchableDropdown, type SearchableOption, type SelectChangeEvent } from '../ui';
 
 const APPOINTMENTS = [
   {
@@ -38,7 +41,21 @@ const APPOINTMENTS = [
   },
 ];
 
+const branchOpts = [
+  { value: 'colombo', label: 'Colombo' },
+  { value: 'kandy', label: 'Kandy' },
+];
+
+const staffOpts: SearchableOption[] = [
+  { value: 'all', label: 'All stylists' },
+  { value: 'ayesha', label: 'Ayesha' },
+  { value: 'ruvini', label: 'Ruvini' },
+];
+
 export default function HeroAppPreview() {
+  const [branch, setBranch] = useState('colombo');
+  const [staff, setStaff] = useState<SearchableOption | null>(staffOpts[0] ?? null);
+
   return (
     <Box sx={{ position: 'relative' }}>
       <Box
@@ -80,6 +97,23 @@ export default function HeroAppPreview() {
               color: '#0E7C5A',
               fontWeight: 600,
             }}
+          />
+        </Stack>
+
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
+          <LabeledSelect
+            size="small"
+            label="Branch"
+            value={branch}
+            onChange={(e: SelectChangeEvent<string>) => setBranch(e.target.value)}
+            options={branchOpts}
+          />
+          <SearchableDropdown
+            size="small"
+            label="Stylist"
+            options={staffOpts}
+            value={staff}
+            onChange={(_, v) => setStaff(v)}
           />
         </Stack>
 

@@ -1,9 +1,8 @@
-import { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  TextField,
   Button,
   Stack,
   InputAdornment,
@@ -13,6 +12,7 @@ import {
   Link,
   alpha,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
@@ -23,7 +23,14 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { motion } from 'framer-motion';
 
+import { LabeledTextField } from '../components/ui';
+import { useAuth } from '../context/AuthContext';
+import { getApiErrorMessage } from '../lib/apiError';
+
 export default function SignupPage() {
+  const navigate = useNavigate();
+  const { user, loading: authLoading, register } = useAuth();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -31,13 +38,19 @@ export default function SignupPage() {
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [authLoading, user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSubmitted(false);
     if (password !== confirm) {
       setError('Passwords do not match.');
       return;
@@ -50,9 +63,30 @@ export default function SignupPage() {
       setError('Please accept the terms to continue.');
       return;
     }
-    setSubmitted(true);
-    // Wire to NestJS registration when ready
+    setSubmitting(true);
+    try {
+      await register({
+        fullName,
+        email,
+        password,
+        phone: phone.trim() || undefined,
+        remember,
+      });
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to create account.'));
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Grid container sx={{ flex: 1, minHeight: { xs: 'auto', md: 'calc(100vh - 73px)' } }}>
@@ -156,11 +190,6 @@ export default function SignupPage() {
               {error}
             </Alert>
           )}
-          {submitted && !error && (
-            <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setSubmitted(false)}>
-              Registration will connect to the API once sign-up is enabled on the backend.
-            </Alert>
-          )}
 
           <Box
             component="form"
@@ -174,14 +203,14 @@ export default function SignupPage() {
             }}
           >
             <Stack spacing={2}>
-              <TextField
+              <LabeledTextField
                 label="Full name"
                 name="name"
                 autoComplete="name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                fullWidth
+                disabled={submitting}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -190,7 +219,7 @@ export default function SignupPage() {
                   ),
                 }}
               />
-              <TextField
+              <LabeledTextField
                 label="Work email"
                 type="email"
                 name="email"
@@ -198,7 +227,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                fullWidth
+                disabled={submitting}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -207,14 +236,14 @@ export default function SignupPage() {
                   ),
                 }}
               />
-              <TextField
+              <LabeledTextField
                 label="Phone (optional)"
                 type="tel"
                 name="phone"
                 autoComplete="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                fullWidth
+                disabled={submitting}
                 placeholder="+94 …"
                 InputProps={{
                   startAdornment: (
@@ -224,7 +253,7 @@ export default function SignupPage() {
                   ),
                 }}
               />
-              <TextField
+              <LabeledTextField
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -232,7 +261,7 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                fullWidth
+                disabled={submitting}
                 helperText="At least 8 characters."
                 InputProps={{
                   startAdornment: (
@@ -253,7 +282,7 @@ export default function SignupPage() {
                   ),
                 }}
               />
-              <TextField
+              <LabeledTextField
                 label="Confirm password"
                 type={showPassword ? 'text' : 'password'}
                 name="confirmPassword"
@@ -261,7 +290,7 @@ export default function SignupPage() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
-                fullWidth
+                disabled={submitting}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -273,9 +302,21 @@ export default function SignupPage() {
               <FormControlLabel
                 control={
                   <Checkbox
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                    color="primary"
+                    disabled={submitting}
+                  />
+                }
+                label="Stay signed in on this device"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
                     checked={acceptTerms}
                     onChange={(e) => setAcceptTerms(e.target.checked)}
                     color="primary"
+                    disabled={submitting}
                   />
                 }
                 label={
@@ -292,8 +333,16 @@ export default function SignupPage() {
                   </Typography>
                 }
               />
-              <Button type="submit" variant="contained" color="primary" size="large" fullWidth sx={{ py: 1.35 }}>
-                Create account
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                size="large"
+                fullWidth
+                disabled={submitting}
+                sx={{ py: 1.35 }}
+              >
+                {submitting ? <CircularProgress size={22} color="inherit" /> : 'Create account'}
               </Button>
             </Stack>
           </Box>
