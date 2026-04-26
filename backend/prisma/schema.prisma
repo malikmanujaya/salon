@@ -1,0 +1,421 @@
+// Lumora — Salon Management
+// Multi-tenant database schema. Most tables include `salonId` (and often
+// `branchId`) so a single deployment can serve many salons safely.
+//
+// Editing this file in development triggers a Prisma client regeneration and
+// a Nest server restart automatically (see `dev:prisma` script).
+//
+// Database: MySQL 8+. Long text fields use `@db.Text` (MySQL's default
+// String maps to VARCHAR(191), which is too small for descriptions/notes).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Identity & access
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  SALON_OWNER
+  RECEPTIONIST
+  STAFF
+  CUSTOMER
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  phone         String?
+  passwordHash  String
+  fullName      String
+  role          UserRole    @default(RECEPTIONIST)
+  status        UserStatus  @default(ACTIVE)
+  lastLoginAt   DateTime?
+
+  salonId       String?
+  salon         Salon?      @relation(fields: [salonId], references: [id], onDelete: SetNull)
+
+  staffProfile  StaffProfile?
+  auditLogs     AuditLog[]
+  bookings      Booking[]   @relation("BookingCreator")
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([salonId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Salons & branches
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum SalonStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+}
+
+model Salon {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  email       String?
+  phone       String?
+  address     String?       @db.Text
+  logoUrl     String?       @db.Text
+  timezone    String        @default("Asia/Colombo")
+  currency    String        @default("LKR")
+  status      SalonStatus   @default(TRIAL)
+
+  branches    Branch[]
+  users       User[]
+  staff       StaffProfile[]
+  customers   Customer[]
+  serviceCategories ServiceCategory[]
+  services    Service[]
+  bookings    Booking[]
+  notificationLogs NotificationLog[]
+  reminderJobs ReminderJob[]
+  auditLogs   AuditLog[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Branch {
+  id          String     @id @default(cuid())
+  salonId     String
+  salon       Salon      @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  name        String
+  address     String?    @db.Text
+  phone       String?
+  openingHours Json?     // { mon: { open: "09:00", close: "20:00" }, ... }
+  isActive    Boolean    @default(true)
+
+  staff       StaffProfile[]
+  bookings    Booking[]
+  services    Service[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([salonId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Staff
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum StaffStatus {
+  ACTIVE
+  ON_LEAVE
+  INACTIVE
+}
+
+model StaffProfile {
+  id          String       @id @default(cuid())
+  userId      String       @unique
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  salonId     String
+  salon       Salon        @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  branchId    String?
+  branch      Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  title       String?     // e.g. "Senior Stylist"
+  bio         String?      @db.Text
+  status      StaffStatus  @default(ACTIVE)
+
+  services    Service[]    @relation("StaffServices")
+  bookings    Booking[]
+  availability StaffAvailability[]
+  leaves      StaffLeave[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([salonId, branchId])
+}
+
+enum Weekday {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+model StaffAvailability {
+  id        String       @id @default(cuid())
+  staffId   String
+  staff     StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  weekday   Weekday
+  startTime String       // "09:00"
+  endTime   String       // "20:00"
+  breakStart String?     // "13:00"
+  breakEnd   String?     // "13:30"
+
+  @@unique([staffId, weekday])
+}
+
+model StaffLeave {
+  id        String       @id @default(cuid())
+  staffId   String
+  staff     StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  startsAt  DateTime
+  endsAt    DateTime
+  reason    String?      @db.Text
+  createdAt DateTime     @default(now())
+
+  @@index([staffId, startsAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Customers
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Gender {
+  FEMALE
+  MALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+model Customer {
+  id        String     @id @default(cuid())
+  salonId   String
+  salon     Salon      @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  fullName  String
+  phone     String
+  email     String?
+  gender    Gender?
+  birthday  DateTime?
+  notes     String?    @db.Text
+
+  bookings  Booking[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([salonId, phone])
+  @@index([salonId, fullName])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Services
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ServiceCategory {
+  id        String     @id @default(cuid())
+  salonId   String
+  salon     Salon      @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  name      String
+  sortOrder Int        @default(0)
+
+  services  Service[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([salonId, name])
+}
+
+model Service {
+  id          String       @id @default(cuid())
+  salonId     String
+  salon       Salon        @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  branchId    String?
+  branch      Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  categoryId  String?
+  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  name        String
+  description String?      @db.Text
+  durationMinutes Int      @default(30)
+  priceCents  Int          @default(0)
+  currency    String       @default("LKR")
+  isActive    Boolean      @default(true)
+
+  staff       StaffProfile[] @relation("StaffServices")
+  bookingServices BookingService[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([salonId, branchId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bookings
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum BookingSource {
+  ADMIN_PORTAL
+  PUBLIC_WEB
+  WALK_IN
+  PHONE
+  WHATSAPP
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  salonId     String
+  salon       Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  branchId    String?
+  branch      Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  customerId  String
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  staffId     String?
+  staff       StaffProfile? @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  startTime   DateTime
+  endTime     DateTime
+  status      BookingStatus @default(PENDING)
+  source      BookingSource @default(ADMIN_PORTAL)
+  notes       String?       @db.Text
+
+  createdById String?
+  createdBy   User?         @relation("BookingCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  services    BookingService[]
+  reminders   ReminderJob[]
+  notifications NotificationLog[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([salonId, startTime])
+  @@index([staffId, startTime])
+  @@index([customerId])
+}
+
+model BookingService {
+  id          String   @id @default(cuid())
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  priceCents  Int
+  durationMinutes Int
+
+  @@unique([bookingId, serviceId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Notifications & reminders
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum NotificationChannel {
+  SMS
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum NotificationKind {
+  BOOKING_CONFIRMATION
+  BOOKING_REMINDER
+  BOOKING_CANCELLATION
+  BOOKING_RESCHEDULE
+  CUSTOM
+}
+
+model NotificationLog {
+  id           String              @id @default(cuid())
+  salonId      String
+  salon        Salon               @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  bookingId    String?
+  booking      Booking?            @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  channel      NotificationChannel
+  kind         NotificationKind
+  status       NotificationStatus  @default(PENDING)
+  recipient    String              // phone or email
+  body         String              @db.Text
+  providerId   String?             // remote id from SMS/email provider
+  errorMessage String?             @db.Text
+
+  sentAt       DateTime?
+  createdAt    DateTime            @default(now())
+
+  @@index([salonId, channel, status])
+  @@index([bookingId])
+}
+
+model ReminderJob {
+  id         String              @id @default(cuid())
+  salonId    String
+  salon      Salon               @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  bookingId  String
+  booking    Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  channel    NotificationChannel
+  scheduledAt DateTime
+  status     NotificationStatus  @default(PENDING)
+  payload    Json?
+
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@index([scheduledAt, status])
+  @@index([bookingId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Audit log
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  salonId     String?
+  salon       Salon?   @relation(fields: [salonId], references: [id], onDelete: SetNull)
+  actorId     String?
+  actor       User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  action      String   // e.g. "booking.created", "service.price.changed"
+  entityType  String?  // e.g. "Booking"
+  entityId    String?
+  metadata    Json?
+
+  createdAt   DateTime @default(now())
+
+  @@index([salonId, createdAt])
+  @@index([entityType, entityId])
+}
