@@ -7,6 +7,7 @@ import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
 import { DashboardModuleDemo } from '../../components/dashboard/DashboardModuleDemo';
 import { PageHeader } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
+import { SALON_DISPLAY_NAME } from '@/constants/display';
 import { palette } from '@/theme/palette';
 
 function StatCard({
@@ -66,7 +67,7 @@ export default function DashboardHomePage() {
     <Box>
       <PageHeader
         title={`Hello, ${user?.fullName?.split(' ')[0] ?? 'there'}`}
-        description={`Snapshot for ${user?.role === 'SUPER_ADMIN' ? 'the platform' : user?.salon?.name ?? 'your salon'}. Stats fill in as modules go live.`}
+        description={`Snapshot for ${user?.role === 'SUPER_ADMIN' ? 'the platform' : user?.role === 'CUSTOMER' ? SALON_DISPLAY_NAME : user?.salon?.name ?? SALON_DISPLAY_NAME}. Stats fill in as modules go live.`}
       />
 
       <Grid container spacing={2.5} sx={{ mb: 1 }}>

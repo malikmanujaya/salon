@@ -45,7 +45,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/dashboard', { replace: true });
+      navigate(user.role === 'CUSTOMER' ? '/dashboard/bookings' : '/dashboard', { replace: true });
     }
   }, [authLoading, user, navigate]);
 
@@ -64,16 +64,20 @@ export default function SignupPage() {
       setError('Please accept the terms to continue.');
       return;
     }
+    if (!phone.trim()) {
+      setError('Enter your phone number so the salon can match your bookings.');
+      return;
+    }
     setSubmitting(true);
     try {
-      await register({
+      const created = await register({
         fullName,
         email,
         password,
-        phone: phone.trim() || undefined,
+        phone: phone.trim(),
         remember,
       });
-      navigate('/dashboard', { replace: true });
+      navigate(created.role === 'CUSTOMER' ? '/dashboard/bookings' : '/dashboard', { replace: true });
     } catch (err) {
       setError(getApiErrorMessage(err, 'Unable to create account.'));
     } finally {
@@ -128,10 +132,10 @@ export default function SignupPage() {
               lineHeight: 1.15,
             }}
           >
-            One calm place for your whole front desk.
+            One calm place for your salon bookings.
           </Typography>
           <Typography variant="body1" sx={{ opacity: 0.92, lineHeight: 1.75, fontWeight: 500 }}>
-            Create an account to manage bookings, staff, and SMS reminders built for salons in Sri Lanka.
+            Create a client account to book appointments and manage your visits with salons on Lumora.
           </Typography>
         </Box>
       </Grid>
@@ -167,7 +171,7 @@ export default function SignupPage() {
               Create account
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Set up your salon workspace in minutes.
+              Book and manage your appointments in one place.
             </Typography>
           </Box>
 
@@ -236,14 +240,16 @@ export default function SignupPage() {
                 }}
               />
               <LabeledTextField
-                label="Phone (optional)"
+                label="Phone"
                 type="tel"
                 name="phone"
                 autoComplete="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                required
                 disabled={submitting}
                 placeholder="+94 …"
+                helperText="Required so the salon can match your bookings."
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">

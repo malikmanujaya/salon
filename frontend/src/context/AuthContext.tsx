@@ -20,9 +20,9 @@ type AuthContextValue = {
     fullName: string;
     email: string;
     password: string;
-    phone?: string;
+    phone: string;
     remember: boolean;
-  }) => Promise<void>;
+  }) => Promise<AuthUser>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
 };
@@ -98,17 +98,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fullName: string;
       email: string;
       password: string;
-      phone?: string;
+      phone: string;
       remember: boolean;
     }) => {
       const { data } = await api.post<AuthTokensResponse>('/auth/register', {
         fullName: input.fullName,
         email: input.email,
         password: input.password,
-        phone: input.phone || undefined,
+        phone: input.phone.trim(),
       });
       setTokens(data.accessToken, data.refreshToken, input.remember);
       setUser(data.user);
+      return data.user;
     },
     [],
   );

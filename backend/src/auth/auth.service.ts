@@ -1,13 +1,14 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
-import { randomBytes } from 'node:crypto';
 
 import type { AppConfig } from '../config/configuration';
 import { PrismaService } from '../prisma/prisma.service';
@@ -27,10 +28,6 @@ export class AuthService {
 
   private get jwtOpts() {
     return this.config.get('jwt', { infer: true })!;
-  }
-
-  private generateSalonSlug(): string {
-    return `s-${randomBytes(12).toString('hex')}`;
   }
 
   private signAccess(user: { id: string; email: string; role: string }): string {
@@ -81,28 +78,51 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const email = dto.email.trim().toLowerCase();
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+    const phone = dto.phone.trim();
+    if (!phone) {
+      throw new BadRequestException('Phone number is required.');
+    }
 
     try {
       const result = await this.prisma.$transaction(async (tx) => {
-        const salonName = `${dto.fullName.trim()}'s Salon`;
-        const salon = await tx.salon.create({
-          data: {
-            name: salonName,
-            slug: this.generateSalonSlug(),
-          },
+        const salon = await tx.salon.findFirst({
+          orderBy: { createdAt: 'asc' },
         });
+        if (!salon) {
+          throw new NotFoundException(
+            'No salon exists yet. Run the database seed (creates the single salon) or add a Salon row.',
+          );
+        }
+
+        const existingCustomer = await tx.customer.findFirst({
+          where: { salonId: salon.id, phone },
+        });
+        if (existingCustomer) {
+          throw new ConflictException(
+            'This phone is already registered at that salon. Sign in, or use a different phone.',
+          );
+        }
 
         const user = await tx.user.create({
           data: {
             email,
-            phone: dto.phone?.trim() || null,
+            phone,
             passwordHash,
             fullName: dto.fullName.trim(),
-            role: 'SALON_OWNER',
+            role: 'CUSTOMER',
             status: 'ACTIVE',
             salonId: salon.id,
           },
           select: { id: true, email: true, role: true },
+        });
+
+        await tx.customer.create({
+          data: {
+            salonId: salon.id,
+            fullName: dto.fullName.trim(),
+            phone,
+            email,
+          },
         });
 
         return user;

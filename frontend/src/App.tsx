@@ -10,6 +10,8 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardHomePage from './pages/dashboard/DashboardHomePage';
 import DashboardPlaceholderPage from './pages/dashboard/DashboardPlaceholderPage';
+import BookingsPage from './pages/dashboard/BookingsPage';
+import CalendarPage from './pages/dashboard/CalendarPage';
 
 export default function App() {
   return (
@@ -32,8 +34,8 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardHomePage />} />
-            <Route path="bookings" element={<DashboardPlaceholderPage />} />
-            <Route path="bookings/calendar" element={<DashboardPlaceholderPage />} />
+            <Route path="bookings" element={<BookingsPage />} />
+            <Route path="bookings/calendar" element={<CalendarPage />} />
             <Route path="customers" element={<DashboardPlaceholderPage />} />
             <Route path="staff" element={<DashboardPlaceholderPage />} />
             <Route path="services" element={<DashboardPlaceholderPage />} />

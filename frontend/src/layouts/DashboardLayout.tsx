@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Avatar,
   Box,
@@ -33,6 +33,7 @@ import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import type { SvgIconComponent } from '@mui/icons-material';
 
 import { useAuth } from '../context/AuthContext';
+import { SALON_DISPLAY_NAME } from '@/constants/display';
 import { gradients, palette } from '@/theme/palette';
 
 const STORAGE_KEY = 'lumora_sidebar_collapsed';
@@ -86,6 +87,21 @@ const NAV: NavEntry[] = [
   },
 ];
 
+/** Salon customers: bookings only (single-salon model; no branch or CRM navigation). */
+const CUSTOMER_NAV: NavEntry[] = [
+  { type: 'link', to: '/dashboard', label: 'Home', icon: DashboardRoundedIcon, end: true },
+  {
+    type: 'group',
+    key: 'bookings',
+    label: 'Bookings',
+    icon: EventAvailableRoundedIcon,
+    children: [
+      { to: '/dashboard/bookings', label: 'All bookings', exact: true },
+      { to: '/dashboard/bookings/calendar', label: 'Calendar' },
+    ],
+  },
+];
+
 function pathActive(pathname: string, to: string, end?: boolean): boolean {
   if (end) return pathname === to;
   return pathname === to || pathname.startsWith(`${to}/`);
@@ -106,6 +122,11 @@ export default function DashboardLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  const navEntries = useMemo(
+    () => (user?.role === 'CUSTOMER' ? CUSTOMER_NAV : NAV),
+    [user?.role],
+  );
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
@@ -128,15 +149,15 @@ export default function DashboardLayout() {
   }, [collapsed]);
 
   useEffect(() => {
-    const bookingsGroup = NAV.find((x): x is NavGroup => x.type === 'group' && x.key === 'bookings');
-    const settingsGroup = NAV.find((x): x is NavGroup => x.type === 'group' && x.key === 'settings');
+    const bookingsGroup = navEntries.find((x): x is NavGroup => x.type === 'group' && x.key === 'bookings');
+    const settingsGroup = navEntries.find((x): x is NavGroup => x.type === 'group' && x.key === 'settings');
     setOpenGroups((g) => {
       const next = { ...g };
       if (bookingsGroup && groupActive(pathname, bookingsGroup.children)) next.bookings = true;
       if (settingsGroup && groupActive(pathname, settingsGroup.children)) next.settings = true;
       return next;
     });
-  }, [pathname]);
+  }, [pathname, navEntries]);
 
   const toggleGroup = (key: string) => {
     setOpenGroups((g) => ({ ...g, [key]: !g[key] }));
@@ -148,7 +169,7 @@ export default function DashboardLayout() {
   };
 
   const renderNav = () =>
-    NAV.map((entry) => {
+    navEntries.map((entry) => {
       if (entry.type === 'link') {
         const Icon = entry.icon;
         const selected = pathActive(pathname, entry.to, entry.end);
@@ -322,7 +343,11 @@ export default function DashboardLayout() {
               Lumora
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }} noWrap>
-              {user?.role === 'SUPER_ADMIN' ? 'Platform · all salons' : (user?.salon?.name ?? 'Your salon')}
+              {user?.role === 'SUPER_ADMIN'
+                ? 'Platform · all salons'
+                : user?.role === 'CUSTOMER'
+                  ? SALON_DISPLAY_NAME
+                  : (user?.salon?.name ?? SALON_DISPLAY_NAME)}
             </Typography>
           </Box>
         ) : (
