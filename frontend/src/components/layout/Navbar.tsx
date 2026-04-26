@@ -17,13 +17,13 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link as RouterLink } from 'react-router-dom';
 
 import Logo from '../brand/Logo';
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
   { label: 'How it works', href: '#how-it-works' },
-  { label: 'Pricing', href: '#pricing' },
   { label: 'Testimonials', href: '#testimonials' },
 ];
 
@@ -88,11 +88,16 @@ export default function Navbar() {
               spacing={1.5}
               sx={{ display: { xs: 'none', md: 'flex' } }}
             >
-              <Button color="inherit" sx={{ color: 'text.primary' }}>
+              <Button
+                component={RouterLink}
+                to="/login"
+                color="inherit"
+                sx={{ color: 'text.primary' }}
+              >
                 Sign in
               </Button>
-              <Button variant="contained" color="primary">
-                Start free trial
+              <Button component={RouterLink} to="/signup" variant="contained" color="primary">
+                Create account
               </Button>
             </Stack>
             <IconButton
@@ -153,11 +158,25 @@ export default function Navbar() {
           </List>
         </AnimatePresence>
         <Stack spacing={1.5} sx={{ mt: 3, px: 2 }}>
-          <Button variant="outlined" color="primary" fullWidth>
+          <Button
+            component={RouterLink}
+            to="/login"
+            variant="outlined"
+            color="primary"
+            fullWidth
+            onClick={() => setOpen(false)}
+          >
             Sign in
           </Button>
-          <Button variant="contained" color="primary" fullWidth>
-            Start free trial
+          <Button
+            component={RouterLink}
+            to="/signup"
+            variant="contained"
+            color="primary"
+            fullWidth
+            onClick={() => setOpen(false)}
+          >
+            Create account
           </Button>
         </Stack>
       </Drawer>

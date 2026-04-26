@@ -1,8 +1,9 @@
 import { Box, Container, Stack, Typography, Button, Chip, alpha } from '@mui/material';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import PlayCircleFilledRoundedIcon from '@mui/icons-material/PlayCircleFilledRounded';
+import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
 import StarRoundedIcon from '@mui/icons-material/StarRounded';
 import { motion } from 'framer-motion';
+import { Link as RouterLink } from 'react-router-dom';
 
 import HeroAppPreview from './HeroAppPreview';
 
@@ -108,26 +109,34 @@ export default function Hero() {
                 sx={{ mb: 4 }}
               >
                 <Button
+                  component={RouterLink}
+                  to="/signup"
                   variant="contained"
                   size="large"
                   endIcon={<ArrowForwardRoundedIcon />}
                   sx={{ py: 1.5, px: 3.5, fontSize: '1rem' }}
                 >
-                  Start free 14-day trial
+                  Create account
                 </Button>
                 <Button
-                  variant="text"
+                  component={RouterLink}
+                  to="/login"
+                  variant="outlined"
                   size="large"
-                  startIcon={<PlayCircleFilledRoundedIcon />}
+                  startIcon={<LoginRoundedIcon />}
                   sx={{
                     color: 'text.primary',
                     py: 1.5,
                     px: 2.5,
                     fontSize: '1rem',
-                    '&:hover': { bgcolor: alpha('#7B2CBF', 0.06) },
+                    borderColor: alpha('#1A0F1F', 0.2),
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                      bgcolor: alpha('#7B2CBF', 0.04),
+                    },
                   }}
                 >
-                  Watch 2-min demo
+                  Sign in
                 </Button>
               </Stack>
             </motion.div>

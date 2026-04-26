@@ -10,7 +10,7 @@ import Logo from '../brand/Logo';
 const COLUMNS = [
   {
     title: 'Product',
-    links: ['Features', 'Pricing', 'Roadmap', 'Changelog'],
+    links: ['Features', 'Roadmap', 'Changelog'],
   },
   {
     title: 'Solutions',

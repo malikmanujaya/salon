@@ -4,8 +4,6 @@ import Features from '../components/sections/Features';
 import HowItWorks from '../components/sections/HowItWorks';
 import Showcase from '../components/sections/Showcase';
 import Testimonials from '../components/sections/Testimonials';
-import Pricing from '../components/sections/Pricing';
-import CTASection from '../components/sections/CTASection';
 
 export default function HomePage() {
   return (
@@ -16,8 +14,6 @@ export default function HomePage() {
       <HowItWorks />
       <Showcase />
       <Testimonials />
-      <Pricing />
-      <CTASection />
     </>
   );
 }

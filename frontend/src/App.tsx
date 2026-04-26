@@ -1,9 +1,11 @@
 import { Route, Routes } from 'react-router-dom';
 import { Box } from '@mui/material';
 
-import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
+import MarketingLayout from './layouts/MarketingLayout';
+import AuthLayout from './layouts/AuthLayout';
 import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 
 export default function App() {
   return (
@@ -15,13 +17,15 @@ export default function App() {
         bgcolor: 'background.default',
       }}
     >
-      <Navbar />
-      <Box component="main" sx={{ flexGrow: 1 }}>
-        <Routes>
+      <Routes>
+        <Route element={<MarketingLayout />}>
           <Route path="/" element={<HomePage />} />
-        </Routes>
-      </Box>
-      <Footer />
+        </Route>
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+        </Route>
+      </Routes>
     </Box>
   );
 }

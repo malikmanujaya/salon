@@ -51,7 +51,7 @@ const FEATURES: Feature[] = [
   },
   {
     icon: StyleRoundedIcon,
-    title: 'Services & pricing',
+    title: 'Services & catalog',
     description:
       'Categories, durations, prices, assigned staff. Update once and it flows through bookings, invoices and reminders.',
     color: '#5A189A',
