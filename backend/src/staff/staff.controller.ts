@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -39,10 +40,10 @@ export class StaffController {
 
   @Get('members')
   @ApiOperation({ summary: 'List salon team (admin, receptionist, stylists)' })
-  listMembers(@CurrentUser() user: RequestUser) {
+  listMembers(@CurrentUser() user: RequestUser, @Query('q') q?: string) {
     this.staff.assertCanViewMembers(user);
     const salonId = this.resolveSalonId(user);
-    return this.staff.listMembers(salonId);
+    return this.staff.listMembers(salonId, q);
   }
 
   @Get('me/dashboard')

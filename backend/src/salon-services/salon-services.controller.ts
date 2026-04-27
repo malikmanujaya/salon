@@ -25,11 +25,12 @@ export class SalonServicesController {
   list(
     @CurrentUser() user: RequestUser,
     @Query('includeInactive') includeInactive?: string,
+    @Query('q') q?: string,
   ) {
     this.salonServices.assertCanView(user);
     const salonId = this.resolveSalonId(user);
     const wantsAll = includeInactive === '1' || includeInactive === 'true';
-    return wantsAll ? this.salonServices.listAll(salonId) : this.salonServices.listActive(salonId);
+    return wantsAll ? this.salonServices.listAll(salonId, q) : this.salonServices.listActive(salonId, q);
   }
 
   @Post()

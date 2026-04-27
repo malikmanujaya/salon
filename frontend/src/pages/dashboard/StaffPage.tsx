@@ -63,6 +63,7 @@ export default function StaffPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [editing, setEditing] = useState<SalonStaffMember | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<SalonStaffMember | null>(null);
+  const [search, setSearch] = useState('');
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -72,9 +73,11 @@ export default function StaffPage() {
   const [title, setTitle] = useState('');
 
   const membersQuery = useQuery({
-    queryKey: ['staff-members'],
+    queryKey: ['staff-members', search],
     queryFn: async () => {
-      const { data } = await api.get<SalonStaffMember[]>('/staff/members');
+      const { data } = await api.get<SalonStaffMember[]>('/staff/members', {
+        params: { q: search.trim() || undefined },
+      });
       return data;
     },
     enabled:
@@ -264,6 +267,10 @@ export default function StaffPage() {
       <AppDataTable
         columns={columns}
         rows={rows}
+        searchPlaceholder="Name, email, phone, title"
+        searchQuery={search}
+        onSearch={(q) => setSearch(q)}
+        clientSearch={false}
         showActions={canManage}
         onEdit={canManage ? openEdit : undefined}
         onDelete={canManage ? (row) => setDeactivateTarget(row) : undefined}

@@ -55,17 +55,44 @@ export class SalonServicesService {
     return rows.map((x) => x.id);
   }
 
-  async listAll(salonId: string): Promise<SalonServiceRow[]> {
+  async listAll(salonId: string, q?: string): Promise<SalonServiceRow[]> {
+    const query = q?.trim();
     return this.prisma.service.findMany({
-      where: { salonId },
+      where: {
+        salonId,
+        ...(query
+          ? {
+              OR: [
+                { name: { contains: query } },
+                { description: { contains: query } },
+                { currency: { contains: query } },
+                { staff: { some: { user: { fullName: { contains: query } } } } },
+              ],
+            }
+          : {}),
+      },
       orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
       select: serviceSelect,
     });
   }
 
-  async listActive(salonId: string): Promise<SalonServiceRow[]> {
+  async listActive(salonId: string, q?: string): Promise<SalonServiceRow[]> {
+    const query = q?.trim();
     return this.prisma.service.findMany({
-      where: { salonId, isActive: true },
+      where: {
+        salonId,
+        isActive: true,
+        ...(query
+          ? {
+              OR: [
+                { name: { contains: query } },
+                { description: { contains: query } },
+                { currency: { contains: query } },
+                { staff: { some: { user: { fullName: { contains: query } } } } },
+              ],
+            }
+          : {}),
+      },
       orderBy: { name: 'asc' },
       select: serviceSelect,
     });

@@ -171,11 +171,22 @@ export class StaffDirectoryService {
     });
   }
 
-  listMembers(salonId: string): Promise<SalonStaffMember[]> {
+  listMembers(salonId: string, q?: string): Promise<SalonStaffMember[]> {
+    const query = q?.trim();
     return this.prisma.user.findMany({
       where: {
         salonId,
         role: { in: ['RECEPTIONIST', 'STAFF', 'SALON_OWNER'] },
+        ...(query
+          ? {
+              OR: [
+                { fullName: { contains: query } },
+                { email: { contains: query } },
+                { phone: { contains: query } },
+                { staffProfile: { title: { contains: query } } },
+              ],
+            }
+          : {}),
       },
       orderBy: { fullName: 'asc' },
       select: memberSelect,

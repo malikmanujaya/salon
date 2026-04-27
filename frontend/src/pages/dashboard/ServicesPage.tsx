@@ -50,6 +50,7 @@ export default function ServicesPage() {
   const [saving, setSaving] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -59,10 +60,10 @@ export default function ServicesPage() {
   const [staffIds, setStaffIds] = useState<string[]>([]);
 
   const servicesQuery = useQuery({
-    queryKey: ['services', 'all'],
+    queryKey: ['services', 'all', search],
     queryFn: async () => {
       const { data } = await api.get<ServiceRow[]>('/salon-services', {
-        params: { includeInactive: true },
+        params: { includeInactive: true, q: search.trim() || undefined },
       });
       return data;
     },
@@ -286,6 +287,10 @@ export default function ServicesPage() {
         columns={columns}
         rows={rows}
         loading={servicesQuery.isLoading}
+        searchPlaceholder="Service, description, currency, staff"
+        searchQuery={search}
+        onSearch={(q) => setSearch(q)}
+        clientSearch={false}
         showActions={canManage}
         onEdit={canManage ? openEdit : undefined}
         onDelete={canManage ? (row) => setDeactivateTarget(row) : undefined}
