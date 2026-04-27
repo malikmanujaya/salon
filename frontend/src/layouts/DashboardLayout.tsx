@@ -350,7 +350,10 @@ export default function DashboardLayout() {
           sx={{
             textDecoration: 'none',
             color: 'inherit',
-            textAlign: collapsed && mdUp ? 'center' : 'left',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
           }}
         >
           {collapsed && mdUp ? (
@@ -361,14 +364,38 @@ export default function DashboardLayout() {
             </Tooltip>
           ) : (
             <>
-              <BrandLogo variant="sidebar-expanded" />
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }} noWrap>
-                {user?.role === 'SUPER_ADMIN'
-                  ? 'Platform · all salons'
-                  : user?.role === 'CUSTOMER'
-                    ? SALON_DISPLAY_NAME
-                    : (user?.salon?.name ?? SALON_DISPLAY_NAME)}
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <BrandLogo variant="sidebar-expanded" />
+              </Box>
+              <Box
+                sx={{
+                  mt: 1.1,
+                  px: 1.25,
+                  py: 0.6,
+                  borderRadius: 999,
+                  border: `1px solid ${alpha(palette.purpleDeep, 0.12)}`,
+                  bgcolor: alpha(palette.white, 0.66),
+                  maxWidth: '100%',
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'block',
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    color: alpha(palette.purpleDeep, 0.74),
+                  }}
+                  noWrap
+                >
+                  {user?.role === 'SUPER_ADMIN'
+                    ? 'Platform · all salons'
+                    : user?.role === 'CUSTOMER'
+                      ? SALON_DISPLAY_NAME
+                      : (user?.salon?.name ?? SALON_DISPLAY_NAME)}
+                </Typography>
+              </Box>
             </>
           )}
         </Box>

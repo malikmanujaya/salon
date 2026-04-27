@@ -35,7 +35,7 @@ const imgSx: Record<BrandLogoVariant, object> = {
     width: '100%',
     maxWidth: '100%',
     objectFit: 'contain',
-    objectPosition: 'left center',
+    objectPosition: 'center',
   },
   'sidebar-collapsed': {
     width: 44,
