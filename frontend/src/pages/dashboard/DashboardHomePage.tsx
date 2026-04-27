@@ -18,6 +18,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { palette } from '@/theme/palette';
 import type { CustomerDashboardSummary } from '@/types/customerDashboard';
 import type { StaffDashboardSummary } from '@/types/staffDashboard';
+import type { SuperAdminDashboardSummary } from '@/types/superAdminDashboard';
 
 function StatCard({
   title,
@@ -73,6 +74,7 @@ export default function DashboardHomePage() {
   const { user } = useAuth();
   const isCustomer = user?.role === 'CUSTOMER';
   const isStaff = user?.role === 'STAFF';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const salonId = user?.salonId ?? user?.salon?.id;
 
   const customerDashboardQuery = useQuery({
@@ -91,6 +93,15 @@ export default function DashboardHomePage() {
       return data;
     },
     enabled: isStaff,
+  });
+
+  const superAdminDashboardQuery = useQuery({
+    queryKey: ['superadmin-dashboard', user?.id],
+    queryFn: async () => {
+      const { data } = await api.get<SuperAdminDashboardSummary>('/auth/superadmin/dashboard');
+      return data;
+    },
+    enabled: isSuperAdmin,
   });
 
   if (isCustomer) {
@@ -404,6 +415,95 @@ export default function DashboardHomePage() {
             </Paper>
           </Grid>
         </Grid>
+      </Box>
+    );
+  }
+
+  if (isSuperAdmin) {
+    const data = superAdminDashboardQuery.data;
+    return (
+      <Box>
+        <PageHeader
+          title={`Hello, ${user?.fullName?.split(' ')[0] ?? 'there'}`}
+          description="Platform overview across all salons."
+          actions={
+            <Button component={RouterLink} to="/dashboard/bookings" variant="contained">
+              Open all bookings
+            </Button>
+          }
+        />
+
+        {superAdminDashboardQuery.error ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {getApiErrorMessage(superAdminDashboardQuery.error, 'Could not load super admin overview.')}
+          </Alert>
+        ) : null}
+
+        <Grid container spacing={2.5} sx={{ mb: 2 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard title="Salons" value={String(data?.totals.salons ?? 0)} subtitle="Registered salons" icon={GroupsRoundedIcon} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard title="Admins" value={String(data?.totals.admins ?? 0)} subtitle="Active salon admins" icon={TaskAltRoundedIcon} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard title="Staff" value={String(data?.totals.staffMembers ?? 0)} subtitle="Active staff users" icon={TrendingUpRoundedIcon} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard title="Customers" value={String(data?.totals.customers ?? 0)} subtitle="Customer records" icon={EventAvailableRoundedIcon} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <StatCard title="Today bookings" value={String(data?.totals.bookingsToday ?? 0)} subtitle="Non-cancelled today" icon={AccessTimeRoundedIcon} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <StatCard title="Upcoming" value={String(data?.totals.upcomingBookings ?? 0)} subtitle="Future scheduled bookings" icon={EventAvailableRoundedIcon} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <StatCard title="Completed this week" value={String(data?.totals.completedThisWeek ?? 0)} subtitle="Completed bookings (week)" icon={TaskAltRoundedIcon} />
+          </Grid>
+        </Grid>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.5,
+            borderRadius: 3,
+            border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.1)}`,
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.25 }}>
+            Recent bookings (platform)
+          </Typography>
+          {data?.recentBookings.length ? (
+            <Box sx={{ display: 'grid', gap: 1.25 }}>
+              {data.recentBookings.map((booking) => (
+                <Box
+                  key={booking.id}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    bgcolor: alpha(palette.purpleDeep, 0.03),
+                    border: `1px solid ${alpha(palette.purpleDeep, 0.08)}`,
+                  }}
+                >
+                  <Typography variant="body2" fontWeight={700}>
+                    {new Date(booking.startTime).toLocaleString(undefined, {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {booking.salon.name} · {booking.customer.fullName} · {booking.status}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No platform bookings yet.
+            </Typography>
+          )}
+        </Paper>
       </Box>
     );
   }

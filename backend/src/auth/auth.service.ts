@@ -3,12 +3,13 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { Prisma } from '@prisma/client';
+import { BookingStatus, Prisma } from '@prisma/client';
 
 import type { AppConfig } from '../config/configuration';
 import { PrismaService } from '../prisma/prisma.service';
@@ -239,5 +240,78 @@ export class AuthService {
     }
 
     return this.buildPublicUser(user.id);
+  }
+
+  async superAdminDashboard(user: RequestUser) {
+    if (user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Only super admin can access this dashboard.');
+    }
+
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + 1);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const [
+      salons,
+      admins,
+      staffMembers,
+      customers,
+      services,
+      bookingsToday,
+      upcomingBookings,
+      completedThisWeek,
+      recentBookings,
+    ] = await Promise.all([
+      this.prisma.salon.count(),
+      this.prisma.user.count({ where: { role: 'SALON_OWNER', status: 'ACTIVE' } }),
+      this.prisma.user.count({ where: { role: { in: ['STAFF', 'RECEPTIONIST'] }, status: 'ACTIVE' } }),
+      this.prisma.customer.count(),
+      this.prisma.service.count({ where: { isActive: true } }),
+      this.prisma.booking.count({
+        where: {
+          startTime: { gte: startOfDay, lte: endOfDay },
+          status: { notIn: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] },
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          startTime: { gt: now },
+          status: { notIn: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] },
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          startTime: { gte: weekStart },
+          status: BookingStatus.COMPLETED,
+        },
+      }),
+      this.prisma.booking.findMany({
+        include: {
+          salon: { select: { id: true, name: true } },
+          customer: { select: { fullName: true } },
+        },
+        orderBy: { startTime: 'desc' },
+        take: 6,
+      }),
+    ]);
+
+    return {
+      totals: {
+        salons,
+        admins,
+        staffMembers,
+        customers,
+        services,
+        bookingsToday,
+        upcomingBookings,
+        completedThisWeek,
+      },
+      recentBookings,
+    };
   }
 }

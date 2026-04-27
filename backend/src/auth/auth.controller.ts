@@ -47,4 +47,12 @@ export class AuthController {
   updateMe(@CurrentUser() user: RequestUser, @Body() dto: UpdateMeDto) {
     return this.auth.updateMe(user, dto);
   }
+
+  @Get('superadmin/dashboard')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Super admin overview summary' })
+  superAdminDashboard(@CurrentUser() user: RequestUser) {
+    return this.auth.superAdminDashboard(user);
+  }
 }
