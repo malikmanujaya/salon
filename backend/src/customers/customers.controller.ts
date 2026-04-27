@@ -14,6 +14,16 @@ import { QueryCustomersDto } from './dto/query-customers.dto';
 @ApiBearerAuth()
 export class CustomersController {
   constructor(private readonly customers: CustomersService) {}
+  private static readonly SUPER_ADMIN_SALON_ID = 'cmofwb8i70001jbrc1f7zigpf';
+
+  @Get('salons/options')
+  @ApiOperation({ summary: 'Salon options for super admin filters' })
+  salonOptions(@CurrentUser() user: RequestUser) {
+    if (user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Only super admin can access salon options.');
+    }
+    return this.customers.listSalonOptions();
+  }
 
   @Get('me/dashboard')
   @ApiOperation({ summary: 'Customer dashboard summary (self)' })
@@ -25,8 +35,11 @@ export class CustomersController {
   @Get()
   @ApiOperation({ summary: 'Search customers (optional q)' })
   list(@CurrentUser() user: RequestUser, @Query() query: QueryCustomersDto) {
-    const salonId = requireSalonId(user);
-    return this.customers.list(salonId, query.q, user);
+    const salonId =
+      user.role === 'SUPER_ADMIN'
+        ? CustomersController.SUPER_ADMIN_SALON_ID
+        : requireSalonId(user);
+    return this.customers.list(salonId, query.q, user, query.page, query.pageSize);
   }
 
   @Post()
@@ -35,7 +48,10 @@ export class CustomersController {
     if (user.role === 'CUSTOMER') {
       throw new ForbiddenException('Salon customers cannot add CRM records.');
     }
-    const salonId = requireSalonId(user);
+    const salonId =
+      user.role === 'SUPER_ADMIN'
+        ? CustomersController.SUPER_ADMIN_SALON_ID
+        : requireSalonId(user);
     return this.customers.create(salonId, dto);
   }
 }

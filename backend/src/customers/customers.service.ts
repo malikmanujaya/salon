@@ -9,6 +9,14 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  listSalonOptions() {
+    return this.prisma.salon.findMany({
+      select: { id: true, name: true, slug: true },
+      orderBy: { createdAt: 'asc' },
+      take: 300,
+    });
+  }
+
   private async getSelfCustomerId(salonId: string, user: RequestUser): Promise<string | null> {
     const phone = user.phone?.trim();
     if (!phone) return null;
@@ -77,11 +85,19 @@ export class CustomersService {
     };
   }
 
-  list(salonId: string, q: string | undefined, user: RequestUser) {
+  async list(
+    salonId: string,
+    q: string | undefined,
+    user: RequestUser,
+    page = 1,
+    pageSize = 20,
+  ) {
     if (user.role === 'CUSTOMER') {
       const phone = user.phone?.trim();
-      if (!phone) return [];
-      return this.prisma.customer.findMany({
+      if (!phone) {
+        return { items: [], total: 0, page: 1, pageSize: 5 };
+      }
+      const items = await this.prisma.customer.findMany({
         where: { salonId, phone },
         orderBy: { fullName: 'asc' },
         take: 5,
@@ -91,8 +107,10 @@ export class CustomersService {
           phone: true,
           email: true,
           createdAt: true,
+          salon: { select: { id: true, name: true, slug: true } },
         },
       });
+      return { items, total: items.length, page: 1, pageSize: 5 };
     }
 
     const search = q?.trim();
@@ -108,18 +126,26 @@ export class CustomersService {
           }
         : {}),
     };
-    return this.prisma.customer.findMany({
-      where,
-      orderBy: { fullName: 'asc' },
-      take: 200,
-      select: {
-        id: true,
-        fullName: true,
-        phone: true,
-        email: true,
-        createdAt: true,
-      },
-    });
+    const safePage = Math.max(1, page);
+    const safePageSize = Math.max(1, Math.min(100, pageSize));
+    const [total, items] = await Promise.all([
+      this.prisma.customer.count({ where }),
+      this.prisma.customer.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+          email: true,
+          createdAt: true,
+          salon: { select: { id: true, name: true, slug: true } },
+        },
+      }),
+    ]);
+    return { items, total, page: safePage, pageSize: safePageSize };
   }
 
   async create(salonId: string, dto: CreateCustomerDto) {
@@ -140,6 +166,7 @@ export class CustomersService {
           phone: true,
           email: true,
           createdAt: true,
+          salon: { select: { id: true, name: true, slug: true } },
         },
       });
     } catch (e) {

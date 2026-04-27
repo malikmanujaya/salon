@@ -3,6 +3,11 @@ import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'cla
 import { Gender } from '@prisma/client';
 
 export class CreateCustomerDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  salonId?: string;
+
   @IsString()
   @MinLength(1)
   @MaxLength(200)

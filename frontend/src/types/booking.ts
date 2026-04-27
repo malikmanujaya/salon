@@ -41,6 +41,7 @@ export type CustomerSummary = {
   phone: string;
   email: string | null;
   createdAt: string;
+  salon?: { id: string; name: string; slug: string };
 };
 
 export type SalonServiceSummary = {

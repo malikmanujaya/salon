@@ -12,6 +12,7 @@ import DashboardHomePage from './pages/dashboard/DashboardHomePage';
 import DashboardPlaceholderPage from './pages/dashboard/DashboardPlaceholderPage';
 import BookingsPage from './pages/dashboard/BookingsPage';
 import CalendarPage from './pages/dashboard/CalendarPage';
+import CustomersPage from './pages/dashboard/CustomersPage';
 
 export default function App() {
   return (
@@ -36,7 +37,7 @@ export default function App() {
             <Route index element={<DashboardHomePage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="bookings/calendar" element={<CalendarPage />} />
-            <Route path="customers" element={<DashboardPlaceholderPage />} />
+            <Route path="customers" element={<CustomersPage />} />
             <Route path="staff" element={<DashboardPlaceholderPage />} />
             <Route path="services" element={<DashboardPlaceholderPage />} />
             <Route path="settings" element={<Navigate to="/dashboard/settings/profile" replace />} />
