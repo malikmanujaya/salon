@@ -37,6 +37,7 @@ type Props = {
   customers: CustomerSummary[];
   services: SalonServiceSummary[];
   staff: StaffSummary[];
+  canManageStatus?: boolean;
   onCustomerCreated: () => void;
 };
 
@@ -49,6 +50,7 @@ export function BookingFormDialog({
   customers,
   services,
   staff,
+  canManageStatus = false,
   onCustomerCreated,
 }: Props) {
   const { user } = useAuth();
@@ -57,6 +59,7 @@ export function BookingFormDialog({
   const [customerId, setCustomerId] = useState('');
   const [staffId, setStaffId] = useState('');
   const [serviceIds, setServiceIds] = useState<string[]>([]);
+  const [status, setStatus] = useState('PENDING');
   const [start, setStart] = useState<Dayjs | null>(null);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -76,6 +79,7 @@ export function BookingFormDialog({
       setCustomerId(initial.customerId);
       setStaffId(initial.staffId ?? '');
       setServiceIds(initial.services.map((s) => s.serviceId));
+      setStatus(initial.status);
       setStart(dayjs(initial.startTime));
       setNotes(initial.notes ?? '');
     } else {
@@ -87,6 +91,7 @@ export function BookingFormDialog({
       }
       setStaffId('');
       setServiceIds(services[0] ? [services[0].id] : []);
+      setStatus('PENDING');
       setStart(roundToNextQuarter(dayjs(startDate)));
       setNotes('');
     }
@@ -134,6 +139,7 @@ export function BookingFormDialog({
           serviceIds,
           staffId: staffId || null,
           notes: notes.trim() || null,
+          ...(canManageStatus ? { status } : {}),
         });
       } else {
         await api.post<BookingDetail>('/bookings', {
@@ -222,6 +228,22 @@ export function BookingFormDialog({
         )}
 
         <LabeledSelect label="Stylist" value={staffId} onChange={(e) => setStaffId(e.target.value)} options={staffOptions} />
+
+        {isEdit && canManageStatus ? (
+          <LabeledSelect
+            label="Status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            options={[
+              { value: 'PENDING', label: 'PENDING' },
+              { value: 'CONFIRMED', label: 'CONFIRMED' },
+              { value: 'COMPLETED', label: 'COMPLETED' },
+              { value: 'CANCELLED', label: 'CANCELLED' },
+              { value: 'NO_SHOW', label: 'NO_SHOW' },
+            ]}
+            required
+          />
+        ) : null}
 
         <FormControl fullWidth>
           <InputLabel id="svc-label" shrink>

@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { Alert, Box, Button, Paper, Typography, alpha } from '@mui/material';
+import { Alert, Box, Button, MenuItem, Paper, Select, Typography, alpha, type SelectChangeEvent } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import EventAvailableRoundedIcon from '@mui/icons-material/EventAvailableRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
@@ -7,7 +8,7 @@ import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
 import TaskAltRoundedIcon from '@mui/icons-material/TaskAltRounded';
 import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { DashboardModuleDemo } from '../../components/dashboard/DashboardModuleDemo';
 import { PageHeader } from '../../components/ui';
@@ -72,10 +73,13 @@ function StatCard({
 
 export default function DashboardHomePage() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const isCustomer = user?.role === 'CUSTOMER';
   const isStaff = user?.role === 'STAFF';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const salonId = user?.salonId ?? user?.salon?.id;
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [statusActionError, setStatusActionError] = useState<string | null>(null);
 
   const customerDashboardQuery = useQuery({
     queryKey: ['customer-dashboard', user?.id],
@@ -239,6 +243,18 @@ export default function DashboardHomePage() {
   if (isStaff) {
     const data = staffDashboardQuery.data;
     const nextBooking = data?.nextBooking;
+    const updateStatus = async (bookingId: string, status: string) => {
+      setStatusActionError(null);
+      setStatusUpdatingId(bookingId);
+      try {
+        await api.patch(`/bookings/${bookingId}`, { status });
+        await qc.invalidateQueries({ queryKey: ['staff-dashboard'] });
+      } catch (e) {
+        setStatusActionError(getApiErrorMessage(e, 'Could not update booking status.'));
+      } finally {
+        setStatusUpdatingId(null);
+      }
+    };
     return (
       <Box>
         <PageHeader
@@ -254,6 +270,11 @@ export default function DashboardHomePage() {
         {staffDashboardQuery.error ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             {getApiErrorMessage(staffDashboardQuery.error, 'Could not load your staff dashboard.')}
+          </Alert>
+        ) : null}
+        {statusActionError ? (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setStatusActionError(null)}>
+            {statusActionError}
           </Alert>
         ) : null}
 
@@ -359,6 +380,21 @@ export default function DashboardHomePage() {
                       <Typography variant="caption" color="text.secondary">
                         {booking.services.map((x) => x.service.name).join(', ')}
                       </Typography>
+                      <Box sx={{ mt: 0.75 }}>
+                        <Select
+                          size="small"
+                          value={booking.status}
+                          disabled={statusUpdatingId === booking.id}
+                          onChange={(e: SelectChangeEvent<string>) => void updateStatus(booking.id, e.target.value)}
+                          sx={{ minWidth: 150 }}
+                        >
+                          {['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'].map((status) => (
+                            <MenuItem key={status} value={status}>
+                              {status}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </Box>
                     </Box>
                   ))}
                 </Box>
@@ -404,6 +440,21 @@ export default function DashboardHomePage() {
                       <Typography variant="caption" color="text.secondary">
                         {booking.customer.fullName} · {booking.status}
                       </Typography>
+                      <Box sx={{ mt: 0.75 }}>
+                        <Select
+                          size="small"
+                          value={booking.status}
+                          disabled={statusUpdatingId === booking.id}
+                          onChange={(e: SelectChangeEvent<string>) => void updateStatus(booking.id, e.target.value)}
+                          sx={{ minWidth: 150 }}
+                        >
+                          {['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'].map((status) => (
+                            <MenuItem key={status} value={status}>
+                              {status}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </Box>
                     </Box>
                   ))}
                 </Box>

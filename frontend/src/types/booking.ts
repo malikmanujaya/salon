@@ -8,7 +8,7 @@ export type BookingCustomer = {
 export type BookingStaff = {
   id: string;
   title: string | null;
-  user: { fullName: string; email: string };
+  user: { id: string; fullName: string; email: string };
 };
 
 export type BookingServiceLine = {

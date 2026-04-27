@@ -26,6 +26,7 @@ type CustomersResponse = CustomerSummary[] | { items?: CustomerSummary[] };
 export default function BookingsPage() {
   const { user, loading: authLoading } = useAuth();
   const isCustomer = user?.role === 'CUSTOMER';
+  const canManageStatus = user?.role === 'SUPER_ADMIN' || user?.role === 'SALON_OWNER';
   const qc = useQueryClient();
   const canUseBookings =
     !authLoading &&
@@ -232,19 +233,16 @@ export default function BookingsPage() {
             helperText={' '}
           />
         </Box>
-        <Button
-          variant="outlined"
-          onClick={() => void bookingsQuery.refetch()}
-          disabled={bookingsQuery.isFetching || Boolean(rangeError)}
-          sx={{ alignSelf: { sm: 'center' } }}
-        >
-          Refresh
-        </Button>
       </Stack>
 
       <AppDataTable
         columns={columns}
         rows={rows}
+        onRefresh={() => {
+          if (!rangeError) {
+            void bookingsQuery.refetch();
+          }
+        }}
         toolbar={
           <Typography variant="body2" color="text.secondary">
             {rows.length} booking{rows.length === 1 ? '' : 's'}
@@ -272,6 +270,7 @@ export default function BookingsPage() {
         customers={customersQuery.data ?? []}
         services={servicesQuery.data ?? []}
         staff={staffQuery.data ?? []}
+        canManageStatus={canManageStatus}
         onCustomerCreated={() => {
           void qc.invalidateQueries({ queryKey: ['customers'] });
         }}

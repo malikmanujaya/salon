@@ -15,7 +15,7 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 
 const bookingInclude = {
   customer: true,
-  staff: { include: { user: { select: { fullName: true, email: true } } } },
+  staff: { include: { user: { select: { id: true, fullName: true, email: true } } } },
   services: { include: { service: true } },
 } satisfies Prisma.BookingInclude;
 
@@ -58,6 +58,29 @@ export class BookingsService {
     if (booking.customerId !== selfId) {
       throw new ForbiddenException('You can only access your own bookings.');
     }
+  }
+
+  private assertCanChangeStatus(user: RequestUser, booking: LoadedBooking) {
+    if (user.role === 'SUPER_ADMIN' || user.role === 'SALON_OWNER') return;
+    if (user.role === 'STAFF' && booking.staff?.user.id === user.id) return;
+    throw new ForbiddenException(
+      'Only super admin, salon owner, or the assigned staff member can change booking status.',
+    );
+  }
+
+  private assertCanCancel(user: RequestUser, booking: LoadedBooking) {
+    if (
+      user.role === 'SUPER_ADMIN' ||
+      user.role === 'SALON_OWNER' ||
+      user.role === 'RECEPTIONIST'
+    ) {
+      return;
+    }
+    if (user.role === 'STAFF' && booking.staff?.user.id === user.id) return;
+    if (user.role === 'CUSTOMER') return;
+    throw new ForbiddenException(
+      'You are not allowed to cancel this booking.',
+    );
   }
 
   async findAll(salonId: string, query: QueryBookingsDto, user: RequestUser) {
@@ -200,6 +223,19 @@ export class BookingsService {
   async update(salonId: string, id: string, dto: UpdateBookingDto, user: RequestUser) {
     const existing = await this.findOne(salonId, id, user);
 
+    if (dto.status !== undefined && dto.status !== existing.status) {
+      this.assertCanChangeStatus(user, existing);
+    }
+
+    if (
+      user.role === 'STAFF' &&
+      (dto.startTime !== undefined ||
+        dto.staffId !== undefined ||
+        dto.serviceIds !== undefined)
+    ) {
+      throw new ForbiddenException('Assigned staff can only change booking status or notes.');
+    }
+
     let start = existing.startTime;
     let end = existing.endTime;
     let staffId: string | null = existing.staffId;
@@ -286,7 +322,8 @@ export class BookingsService {
   }
 
   async cancel(salonId: string, id: string, user: RequestUser) {
-    await this.findOne(salonId, id, user);
+    const existing = await this.findOne(salonId, id, user);
+    this.assertCanCancel(user, existing);
     return this.prisma.booking.update({
       where: { id },
       data: { status: BookingStatus.CANCELLED },
