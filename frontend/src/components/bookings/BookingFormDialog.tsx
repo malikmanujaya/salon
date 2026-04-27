@@ -13,7 +13,9 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import dayjs, { type Dayjs } from 'dayjs';
 
+import { AppDateTimePicker } from '@/components/ui/AppDateTimePicker';
 import { FormDialog } from '@/components/ui/FormDialog';
 import { LabeledSelect, type LabeledSelectOption } from '@/components/ui/LabeledSelect';
 import { LabeledTextField } from '@/components/ui/LabeledTextField';
@@ -22,7 +24,6 @@ import { useAuth } from '@/context/AuthContext';
 import { SALON_DISPLAY_NAME } from '@/constants/display';
 import { api } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { toDatetimeLocalValue } from '@/lib/datetimeLocal';
 import type { BookingDetail, CustomerSummary, SalonServiceSummary, StaffSummary } from '@/types/booking';
 
 type Props = {
@@ -56,7 +57,7 @@ export function BookingFormDialog({
   const [customerId, setCustomerId] = useState('');
   const [staffId, setStaffId] = useState('');
   const [serviceIds, setServiceIds] = useState<string[]>([]);
-  const [startLocal, setStartLocal] = useState('');
+  const [start, setStart] = useState<Dayjs | null>(null);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,10 +76,10 @@ export function BookingFormDialog({
       setCustomerId(initial.customerId);
       setStaffId(initial.staffId ?? '');
       setServiceIds(initial.services.map((s) => s.serviceId));
-      setStartLocal(toDatetimeLocalValue(new Date(initial.startTime)));
+      setStart(dayjs(initial.startTime));
       setNotes(initial.notes ?? '');
     } else {
-      const start = defaultStart ?? new Date();
+      const startDate = defaultStart ?? new Date();
       if (!isCustomer) {
         setCustomerId(customers[0]?.id ?? '');
       } else {
@@ -86,7 +87,7 @@ export function BookingFormDialog({
       }
       setStaffId('');
       setServiceIds(services[0] ? [services[0].id] : []);
-      setStartLocal(toDatetimeLocalValue(start));
+      setStart(roundToNextQuarter(dayjs(startDate)));
       setNotes('');
     }
   }, [open, initial, defaultStart, customers, services, isCustomer]);
@@ -119,17 +120,17 @@ export function BookingFormDialog({
       setError('Select at least one service.');
       return;
     }
-    const start = new Date(startLocal);
-    if (Number.isNaN(start.getTime())) {
-      setError('Invalid date/time.');
+    if (!start || !start.isValid()) {
+      setError('Pick a valid start date and time.');
       return;
     }
+    const startIso = start.toDate().toISOString();
 
     setLoading(true);
     try {
       if (initial) {
         await api.patch<BookingDetail>(`/bookings/${initial.id}`, {
-          startTime: start.toISOString(),
+          startTime: startIso,
           serviceIds,
           staffId: staffId || null,
           notes: notes.trim() || null,
@@ -137,7 +138,7 @@ export function BookingFormDialog({
       } else {
         await api.post<BookingDetail>('/bookings', {
           ...(isCustomer ? {} : { customerId }),
-          startTime: start.toISOString(),
+          startTime: startIso,
           serviceIds,
           staffId: staffId || undefined,
           notes: notes.trim() || undefined,
@@ -248,12 +249,12 @@ export function BookingFormDialog({
           </Select>
         </FormControl>
 
-        <LabeledTextField
+        <AppDateTimePicker
           label="Start"
-          type="datetime-local"
-          value={startLocal}
-          onChange={(e) => setStartLocal(e.target.value)}
-          InputLabelProps={{ shrink: true }}
+          value={start}
+          onChange={(value) => setStart(value)}
+          required
+          helperText={start ? `Booking begins ${start.format('dddd, MMM D · h:mm A')}` : ' '}
         />
 
         <LabeledTextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} multiline minRows={2} />
@@ -278,4 +279,12 @@ export function BookingFormDialog({
 
 function formatRangeLabel(b: BookingDetail) {
   return `${b.customer.fullName} · ${new Date(b.startTime).toLocaleString()}`;
+}
+
+/** Round up to the next 15-minute mark so the picker opens on a tidy slot. */
+function roundToNextQuarter(d: Dayjs): Dayjs {
+  const minute = d.minute();
+  const remainder = minute % 15;
+  const add = remainder === 0 ? 0 : 15 - remainder;
+  return d.add(add, 'minute').second(0).millisecond(0);
 }

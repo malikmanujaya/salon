@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Alert, Box, Button, Chip, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Stack, Typography } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import dayjs, { type Dayjs } from 'dayjs';
 
 import { BookingFormDialog } from '@/components/bookings/BookingFormDialog';
 import { AppDataTable, type AppTableColumn } from '@/components/ui/AppDataTable';
+import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { DeleteConfirmModal } from '@/components/ui/DeleteConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { formatBookingRange, toIsoRange } from '@/lib/datetimeLocal';
+import { formatBookingRange } from '@/lib/datetimeLocal';
 import type { BookingDetail, CustomerSummary, SalonServiceSummary, StaffSummary } from '@/types/booking';
 
 export default function BookingsPage() {
@@ -20,18 +22,22 @@ export default function BookingsPage() {
   const qc = useQueryClient();
   const salonId = user?.salonId;
 
-  const defaultRange = useMemo(() => {
-    const to = new Date();
-    const from = new Date();
-    from.setDate(from.getDate() - 14);
-    return toIsoRange(from, to);
-  }, []);
+  const [from, setFrom] = useState<Dayjs | null>(() => dayjs().subtract(14, 'day').startOf('day'));
+  const [to, setTo] = useState<Dayjs | null>(() => dayjs().endOf('day'));
 
-  const [from, setFrom] = useState(defaultRange.from.slice(0, 10));
-  const [to, setTo] = useState(defaultRange.to.slice(0, 10));
+  const rangeError =
+    from && to && from.isValid() && to.isValid() && from.isAfter(to)
+      ? 'From must be on or before To.'
+      : null;
 
-  const fromIso = useMemo(() => new Date(`${from}T00:00:00`).toISOString(), [from]);
-  const toIso = useMemo(() => new Date(`${to}T23:59:59`).toISOString(), [to]);
+  const fromIso = useMemo(
+    () => (from && from.isValid() ? from.startOf('day').toDate().toISOString() : null),
+    [from],
+  );
+  const toIso = useMemo(
+    () => (to && to.isValid() ? to.endOf('day').toDate().toISOString() : null),
+    [to],
+  );
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings', fromIso, toIso],
@@ -39,7 +45,7 @@ export default function BookingsPage() {
       const { data } = await api.get<BookingDetail[]>('/bookings', { params: { from: fromIso, to: toIso } });
       return data;
     },
-    enabled: Boolean(salonId),
+    enabled: Boolean(salonId) && Boolean(fromIso) && Boolean(toIso) && !rangeError,
   });
 
   const customersQuery = useQuery({
@@ -180,24 +186,40 @@ export default function BookingsPage() {
         </Alert>
       ) : null}
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }} alignItems={{ sm: 'center' }}>
-        <TextField
-          label="From"
-          type="date"
-          size="small"
-          value={from}
-          onChange={(e) => setFrom(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-        />
-        <TextField
-          label="To"
-          type="date"
-          size="small"
-          value={to}
-          onChange={(e) => setTo(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-        />
-        <Button variant="outlined" onClick={() => void bookingsQuery.refetch()} disabled={bookingsQuery.isFetching}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
+        sx={{ mb: 2 }}
+        alignItems={{ sm: 'flex-start' }}
+      >
+        <Box sx={{ flex: 1, minWidth: { sm: 220 } }}>
+          <AppDatePicker
+            label="From"
+            size="small"
+            value={from}
+            onChange={(value) => setFrom(value)}
+            maxDate={to ?? undefined}
+            error={Boolean(rangeError)}
+            helperText={rangeError ?? ' '}
+          />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: { sm: 220 } }}>
+          <AppDatePicker
+            label="To"
+            size="small"
+            value={to}
+            onChange={(value) => setTo(value)}
+            minDate={from ?? undefined}
+            error={Boolean(rangeError)}
+            helperText={' '}
+          />
+        </Box>
+        <Button
+          variant="outlined"
+          onClick={() => void bookingsQuery.refetch()}
+          disabled={bookingsQuery.isFetching || Boolean(rangeError)}
+          sx={{ alignSelf: { sm: 'center' } }}
+        >
           Refresh
         </Button>
       </Stack>
