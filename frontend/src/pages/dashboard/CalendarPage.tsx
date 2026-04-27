@@ -1,33 +1,48 @@
 import { useMemo, useState } from 'react';
-import { Alert, Box, Button, IconButton, Stack, Typography } from '@mui/material';
-import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
+import { Alert, Box, Button } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 
 import { BookingFormDialog } from '@/components/bookings/BookingFormDialog';
-import { WeekCalendarView } from '@/components/bookings/WeekCalendarView';
+import { BookingsCalendar } from '@/components/bookings/BookingsCalendar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/context/AuthContext';
 import { SALON_DISPLAY_NAME } from '@/constants/display';
 import { api } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { addDays, endOfWeekSunday, startOfWeekMonday, toIsoRange } from '@/lib/datetimeLocal';
-import type { BookingDetail, CustomerSummary, SalonServiceSummary, StaffSummary } from '@/types/booking';
+import type {
+  BookingDetail,
+  CustomerSummary,
+  SalonServiceSummary,
+  StaffSummary,
+} from '@/types/booking';
+
+type CustomersResponse = CustomerSummary[] | { items?: CustomerSummary[] };
 
 export default function CalendarPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const salonId = user?.salonId;
 
-  const [weekStart, setWeekStart] = useState(() => startOfWeekMonday(new Date()));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogNonce, setDialogNonce] = useState(0);
   const [editing, setEditing] = useState<BookingDetail | null>(null);
   const [slotDefault, setSlotDefault] = useState<Date | null>(null);
 
-  const range = useMemo(() => toIsoRange(weekStart, endOfWeekSunday(weekStart)), [weekStart]);
+  /**
+   * The big-calendar component manages its own visible date internally; for fetching,
+   * we load a generous window (current month ± 6 weeks) so navigation feels instant.
+   * If the dataset grows large, switch to on-`range-change` refetches.
+   */
+  const range = useMemo(() => {
+    const now = dayjs();
+    return {
+      from: now.subtract(6, 'week').startOf('day').toISOString(),
+      to: now.add(6, 'week').endOf('day').toISOString(),
+    };
+  }, []);
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings', range.from, range.to],
@@ -43,8 +58,8 @@ export default function CalendarPage() {
   const customersQuery = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
-      const { data } = await api.get<CustomerSummary[]>('/customers');
-      return data;
+      const { data } = await api.get<CustomersResponse>('/customers');
+      return Array.isArray(data) ? data : data.items ?? [];
     },
     enabled: Boolean(salonId),
   });
@@ -98,13 +113,11 @@ export default function CalendarPage() {
     );
   }
 
-  const weekLabel = `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${addDays(weekStart, 6).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
-
   return (
     <Box>
       <PageHeader
         title="Calendar"
-        description="Click a booking to edit, or a time row to add one."
+        description="Click a booking to edit, drag to select a time, or use the toolbar to switch views."
         actions={
           <Button
             variant="contained"
@@ -123,30 +136,10 @@ export default function CalendarPage() {
         </Alert>
       ) : null}
 
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-        <IconButton aria-label="Previous week" onClick={() => setWeekStart((w) => addDays(w, -7))}>
-          <ChevronLeftRoundedIcon />
-        </IconButton>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ minWidth: 200, textAlign: 'center' }}>
-          {weekLabel}
-        </Typography>
-        <IconButton aria-label="Next week" onClick={() => setWeekStart((w) => addDays(w, 7))}>
-          <ChevronRightRoundedIcon />
-        </IconButton>
-        <Button size="small" variant="outlined" onClick={() => setWeekStart(startOfWeekMonday(new Date()))}>
-          This week
-        </Button>
-      </Stack>
-
-      <WeekCalendarView
-        weekStartMonday={weekStart}
+      <BookingsCalendar
         bookings={bookingsQuery.data ?? []}
         onSelectBooking={openEdit}
-        onSelectSlot={(day, hour) => {
-          const d = new Date(day);
-          d.setHours(hour, 0, 0, 0);
-          openCreate(d);
-        }}
+        onSelectSlot={(start) => openCreate(start)}
       />
 
       <BookingFormDialog

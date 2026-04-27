@@ -1,8 +1,11 @@
 import { Box, Container, Stack, Typography, Button, Chip, alpha } from '@mui/material';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import EventAvailableRoundedIcon from '@mui/icons-material/EventAvailableRounded';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
+import SmsRoundedIcon from '@mui/icons-material/SmsRounded';
 import StarRoundedIcon from '@mui/icons-material/StarRounded';
 import { motion } from 'framer-motion';
+import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 import HeroAppPreview from './HeroAppPreview';
@@ -147,24 +150,7 @@ export default function Hero() {
               animate="show"
               custom={4}
             >
-              <Stack
-                direction="row"
-                spacing={3}
-                sx={{ color: 'text.secondary' }}
-                divider={
-                  <Box
-                    sx={{
-                      width: 1,
-                      bgcolor: alpha(palette.purpleDeep, 0.15),
-                      mx: 0,
-                    }}
-                  />
-                }
-              >
-                <BulletStat value="92%" label="fewer no-shows" />
-                <BulletStat value="<10s" label="to create a booking" />
-                <BulletStat value="24/7" label="SMS reminders" />
-              </Stack>
+              <HeroStatsBand />
             </motion.div>
           </Box>
 
@@ -190,22 +176,116 @@ export default function Hero() {
   );
 }
 
+function HeroStatsBand() {
+  return (
+    <Box
+      sx={{
+        position: 'relative',
+        borderRadius: 4,
+        overflow: 'hidden',
+        border: `1px solid ${alpha(palette.purpleDeep, 0.08)}`,
+        background: `linear-gradient(125deg, ${alpha(palette.ivory, 0.98)} 0%, ${alpha(palette.rose, 0.14)} 42%, ${alpha(palette.ivory, 0.95)} 100%)`,
+        p: { xs: 2.5, sm: 3, md: 3.5 },
+      }}
+    >
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          opacity: 0.45,
+          backgroundImage: `linear-gradient(${alpha(palette.purpleDeep, 0.06)} 1px, transparent 1px), linear-gradient(90deg, ${alpha(palette.purpleDeep, 0.06)} 1px, transparent 1px)`,
+          backgroundSize: '28px 28px',
+          pointerEvents: 'none',
+        }}
+      />
+      <Box
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          display: { xs: 'flex', md: 'grid' },
+          flexDirection: { xs: 'column', md: 'row' },
+          gridTemplateColumns: { md: 'minmax(0, 1fr) 80px minmax(0, 1fr) 80px minmax(0, 1fr)' },
+          alignItems: { md: 'center' },
+          gap: { xs: 2.5, md: 0 },
+          columnGap: { md: 2 },
+        }}
+      >
+        <BulletStat value="92%" label="fewer no-shows" />
+        <StatDivider label="Confirmed bookings">
+          <EventAvailableRoundedIcon sx={{ fontSize: 30 }} />
+        </StatDivider>
+        <BulletStat value="<10s" label="to create a booking" />
+        <StatDivider label="SMS reminders">
+          <SmsRoundedIcon sx={{ fontSize: 30 }} />
+        </StatDivider>
+        <BulletStat value="24/7" label="SMS reminders" />
+      </Box>
+    </Box>
+  );
+}
+
+/** Visual break between stats — icon in a soft circle (hidden on narrow screens). */
+function StatDivider({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Box
+      title={label}
+      sx={{
+        display: { xs: 'none', md: 'flex' },
+        alignItems: 'center',
+        justifyContent: 'center',
+        alignSelf: 'stretch',
+      }}
+    >
+      <Box
+        role="img"
+        aria-label={label}
+        sx={{
+          width: 64,
+          height: 64,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: alpha(palette.purpleDeep, 0.06),
+          border: `1px solid ${alpha(palette.purpleDeep, 0.1)}`,
+          boxShadow: `inset 0 1px 0 ${alpha(palette.white, 0.7)}`,
+          color: 'primary.main',
+          opacity: 0.92,
+        }}
+      >
+        {children}
+      </Box>
+    </Box>
+  );
+}
+
 function BulletStat({ value, label }: { value: string; label: string }) {
   return (
-    <Box>
+    <Box sx={{ pr: { md: 1 }, maxWidth: { md: 200 } }}>
       <Typography
-        variant="h4"
+        variant="h3"
         sx={{
           fontFamily: '"Playfair Display", serif',
           fontWeight: 700,
           color: 'primary.main',
-          lineHeight: 1,
-          mb: 0.5,
+          lineHeight: 1.05,
+          letterSpacing: '-0.02em',
+          mb: 1,
+          fontSize: { xs: '2rem', sm: '2.25rem' },
         }}
       >
         {value}
       </Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+          fontWeight: 500,
+          lineHeight: 1.45,
+          maxWidth: 160,
+        }}
+      >
         {label}
       </Typography>
     </Box>

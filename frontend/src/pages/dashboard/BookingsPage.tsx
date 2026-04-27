@@ -14,7 +14,14 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatBookingRange } from '@/lib/datetimeLocal';
-import type { BookingDetail, CustomerSummary, SalonServiceSummary, StaffSummary } from '@/types/booking';
+import type {
+  BookingDetail,
+  CustomerSummary,
+  SalonServiceSummary,
+  StaffSummary,
+} from '@/types/booking';
+
+type CustomersResponse = CustomerSummary[] | { items?: CustomerSummary[] };
 
 export default function BookingsPage() {
   const { user } = useAuth();
@@ -51,8 +58,8 @@ export default function BookingsPage() {
   const customersQuery = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
-      const { data } = await api.get<CustomerSummary[]>('/customers');
-      return data;
+      const { data } = await api.get<CustomersResponse>('/customers');
+      return Array.isArray(data) ? data : data.items ?? [];
     },
     enabled: Boolean(salonId),
   });
