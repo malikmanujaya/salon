@@ -51,7 +51,7 @@ export const theme = createTheme({
       primary: palette.purpleDeep,
       secondary: alpha(palette.purpleDeep, 0.7),
     },
-    divider: alpha(palette.purpleDeep, 0.08),
+    divider: alpha(palette.purpleDeep, 0.14),
   },
   shape: {
     borderRadius: 14,
@@ -109,7 +109,7 @@ export const theme = createTheme({
         containedPrimary: {
           background: `linear-gradient(135deg, ${palette.purple} 0%, ${palette.orchid} 100%)`,
           '&:hover': {
-            background: `linear-gradient(135deg, ${palette.purpleDark} 0%, ${palette.purple} 100%)`,
+            background: `linear-gradient(135deg, ${palette.purpleDark} 0%, ${palette.purpleMid} 100%)`,
           },
         },
       },

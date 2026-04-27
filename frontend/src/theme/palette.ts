@@ -1,22 +1,22 @@
 /**
  * Global brand palette — single source of truth for colors across theme, CSS, and components.
- * (Property names keep legacy “purple/orchid” keys for stable imports; values are a red theme.)
+ * (Property names keep legacy “purple/orchid” keys for stable imports; values tuned for a pink touch vibe.)
  */
 
 export const palette = {
-  purpleDeep: '#1C0B0B',
-  purpleMid: '#7F1D1D',
-  purpleDark: '#B91C1C',
-  purple: '#DC2626',
-  orchid: '#F87171',
-  orchidLight: '#FCA5A5',
-  rose: '#FECACA',
-  roseLight: '#FEE2E2',
-  roseDark: '#EF4444',
-  gold: '#F97316',
-  goldLight: '#FB923C',
-  goldDark: '#EA580C',
-  ivory: '#FFF5F5',
+  purpleDeep: '#2A111C',
+  purpleMid: '#7A2E56',
+  purpleDark: '#A53E73',
+  purple: '#D85B95',
+  orchid: '#E88AB3',
+  orchidLight: '#F4BED7',
+  rose: '#F8DCE8',
+  roseLight: '#FDF1F7',
+  roseDark: '#CE5E90',
+  gold: '#E8A1BC',
+  goldLight: '#F2C5D8',
+  goldDark: '#C87097',
+  ivory: '#FFF6FA',
   white: '#FFFFFF',
   success: '#16A34A',
   successDark: '#166534',
@@ -30,11 +30,11 @@ export type BrandPalette = typeof palette;
 
 /** RGB channels for rgba() (comma-separated values only). */
 export const paletteRgb = {
-  purple: '220, 38, 38',
-  purpleDeep: '28, 11, 11',
-  orchid: '248, 113, 113',
-  rose: '254, 202, 202',
-  ivory: '255, 245, 245',
+  purple: '216, 91, 149',
+  purpleDeep: '42, 17, 28',
+  orchid: '232, 138, 179',
+  rose: '248, 220, 232',
+  ivory: '255, 246, 250',
 } as const;
 
 export const rgbaFrom = (channel: keyof typeof paletteRgb, a: number) =>
