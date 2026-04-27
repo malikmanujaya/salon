@@ -502,6 +502,7 @@ export default function DashboardLayout() {
           </Typography>
           <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
             <Avatar
+              src={user?.avatarUrl ?? undefined}
               sx={{
                 width: 36,
                 height: 36,

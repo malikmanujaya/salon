@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { Prisma, StaffStatus, UserStatus } from '@prisma/client';
+import { BookingStatus, Prisma, StaffStatus, UserStatus } from '@prisma/client';
 
 import type { RequestUser } from '../auth/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -37,6 +37,111 @@ export type SalonStaffMember = Prisma.UserGetPayload<{ select: typeof memberSele
 @Injectable()
 export class StaffDirectoryService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async staffDashboard(salonId: string, user: RequestUser) {
+    if (user.role !== 'STAFF') {
+      throw new ForbiddenException('Only staff users can access this dashboard.');
+    }
+
+    const staffProfile = await this.prisma.staffProfile.findFirst({
+      where: { userId: user.id, salonId },
+      select: { id: true, title: true },
+    });
+
+    if (!staffProfile) {
+      return {
+        staffId: null,
+        totals: { today: 0, upcoming: 0, completedThisWeek: 0, total: 0 },
+        nextBooking: null,
+        todayBookings: [],
+        recentBookings: [],
+      };
+    }
+
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + 1);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const [total, today, upcoming, completedThisWeek, nextBooking, todayBookings, recentBookings] =
+      await Promise.all([
+        this.prisma.booking.count({
+          where: { salonId, staffId: staffProfile.id },
+        }),
+        this.prisma.booking.count({
+          where: {
+            salonId,
+            staffId: staffProfile.id,
+            startTime: { gte: startOfDay, lte: endOfDay },
+            status: { notIn: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] },
+          },
+        }),
+        this.prisma.booking.count({
+          where: {
+            salonId,
+            staffId: staffProfile.id,
+            startTime: { gt: now },
+            status: { notIn: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] },
+          },
+        }),
+        this.prisma.booking.count({
+          where: {
+            salonId,
+            staffId: staffProfile.id,
+            status: BookingStatus.COMPLETED,
+            startTime: { gte: weekStart },
+          },
+        }),
+        this.prisma.booking.findFirst({
+          where: {
+            salonId,
+            staffId: staffProfile.id,
+            startTime: { gt: now },
+            status: { notIn: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] },
+          },
+          include: {
+            customer: { select: { fullName: true, phone: true } },
+            services: { include: { service: { select: { name: true } } } },
+          },
+          orderBy: { startTime: 'asc' },
+        }),
+        this.prisma.booking.findMany({
+          where: {
+            salonId,
+            staffId: staffProfile.id,
+            startTime: { gte: startOfDay, lte: endOfDay },
+            status: { notIn: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] },
+          },
+          include: {
+            customer: { select: { fullName: true, phone: true } },
+            services: { include: { service: { select: { name: true } } } },
+          },
+          orderBy: { startTime: 'asc' },
+          take: 8,
+        }),
+        this.prisma.booking.findMany({
+          where: { salonId, staffId: staffProfile.id },
+          include: {
+            customer: { select: { fullName: true, phone: true } },
+            services: { include: { service: { select: { name: true } } } },
+          },
+          orderBy: { startTime: 'desc' },
+          take: 5,
+        }),
+      ]);
+
+    return {
+      staffId: staffProfile.id,
+      totals: { today, upcoming, completedThisWeek, total },
+      nextBooking,
+      todayBookings,
+      recentBookings,
+    };
+  }
 
   private async getMemberOrThrow(salonId: string, memberId: string): Promise<SalonStaffMember> {
     const member = await this.prisma.user.findFirst({

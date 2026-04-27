@@ -17,6 +17,7 @@ import { api } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { palette } from '@/theme/palette';
 import type { CustomerDashboardSummary } from '@/types/customerDashboard';
+import type { StaffDashboardSummary } from '@/types/staffDashboard';
 
 function StatCard({
   title,
@@ -71,7 +72,8 @@ function StatCard({
 export default function DashboardHomePage() {
   const { user } = useAuth();
   const isCustomer = user?.role === 'CUSTOMER';
-  const salonId = user?.salonId;
+  const isStaff = user?.role === 'STAFF';
+  const salonId = user?.salonId ?? user?.salon?.id;
 
   const customerDashboardQuery = useQuery({
     queryKey: ['customer-dashboard', user?.id],
@@ -80,6 +82,15 @@ export default function DashboardHomePage() {
       return data;
     },
     enabled: isCustomer && Boolean(salonId),
+  });
+
+  const staffDashboardQuery = useQuery({
+    queryKey: ['staff-dashboard', user?.id],
+    queryFn: async () => {
+      const { data } = await api.get<StaffDashboardSummary>('/staff/me/dashboard');
+      return data;
+    },
+    enabled: isStaff,
   });
 
   if (isCustomer) {
@@ -210,6 +221,189 @@ export default function DashboardHomePage() {
             </Typography>
           )}
         </Paper>
+      </Box>
+    );
+  }
+
+  if (isStaff) {
+    const data = staffDashboardQuery.data;
+    const nextBooking = data?.nextBooking;
+    return (
+      <Box>
+        <PageHeader
+          title={`Hello, ${user?.fullName?.split(' ')[0] ?? 'there'}`}
+          description={`Your ${SALON_DISPLAY_NAME} staff overview for today.`}
+          actions={
+            <Button component={RouterLink} to="/dashboard/bookings/calendar" variant="contained">
+              Open calendar
+            </Button>
+          }
+        />
+
+        {staffDashboardQuery.error ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {getApiErrorMessage(staffDashboardQuery.error, 'Could not load your staff dashboard.')}
+          </Alert>
+        ) : null}
+
+        <Grid container spacing={2.5} sx={{ mb: 2 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              title="Today"
+              value={String(data?.totals.today ?? 0)}
+              subtitle="Appointments today"
+              icon={AccessTimeRoundedIcon}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              title="Upcoming"
+              value={String(data?.totals.upcoming ?? 0)}
+              subtitle="Future appointments"
+              icon={EventAvailableRoundedIcon}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              title="Completed"
+              value={String(data?.totals.completedThisWeek ?? 0)}
+              subtitle="Completed this week"
+              icon={TaskAltRoundedIcon}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              title="Lifetime"
+              value={String(data?.totals.total ?? 0)}
+              subtitle="All assigned bookings"
+              icon={TrendingUpRoundedIcon}
+            />
+          </Grid>
+        </Grid>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.5,
+            mb: 2.5,
+            borderRadius: 3,
+            border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.1)}`,
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
+            Next appointment
+          </Typography>
+          {nextBooking ? (
+            <>
+              <Typography variant="body1" fontWeight={600}>
+                {new Date(nextBooking.startTime).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                Customer: {nextBooking.customer.fullName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Services: {nextBooking.services.map((x) => x.service.name).join(', ')}
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No upcoming appointments assigned yet.
+            </Typography>
+          )}
+        </Paper>
+
+        <Grid container spacing={2.5}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.1)}`,
+                height: '100%',
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.25 }}>
+                Today's queue
+              </Typography>
+              {data?.todayBookings.length ? (
+                <Box sx={{ display: 'grid', gap: 1.25 }}>
+                  {data.todayBookings.map((booking) => (
+                    <Box
+                      key={booking.id}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: alpha(palette.purpleDeep, 0.03),
+                        border: `1px solid ${alpha(palette.purpleDeep, 0.08)}`,
+                      }}
+                    >
+                      <Typography variant="body2" fontWeight={700}>
+                        {new Date(booking.startTime).toLocaleTimeString(undefined, {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}{' '}
+                        · {booking.customer.fullName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {booking.services.map((x) => x.service.name).join(', ')}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No appointments in today's queue.
+                </Typography>
+              )}
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.1)}`,
+                height: '100%',
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.25 }}>
+                Recent bookings
+              </Typography>
+              {data?.recentBookings.length ? (
+                <Box sx={{ display: 'grid', gap: 1.25 }}>
+                  {data.recentBookings.map((booking) => (
+                    <Box
+                      key={booking.id}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: alpha(palette.purpleDeep, 0.03),
+                        border: `1px solid ${alpha(palette.purpleDeep, 0.08)}`,
+                      }}
+                    >
+                      <Typography variant="body2" fontWeight={700}>
+                        {new Date(booking.startTime).toLocaleString(undefined, {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {booking.customer.fullName} · {booking.status}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No recent bookings yet.
+                </Typography>
+              )}
+            </Paper>
+          </Grid>
+        </Grid>
       </Box>
     );
   }

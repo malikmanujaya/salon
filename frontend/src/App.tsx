@@ -15,6 +15,7 @@ import CalendarPage from './pages/dashboard/CalendarPage';
 import CustomersPage from './pages/dashboard/CustomersPage';
 import StaffPage from './pages/dashboard/StaffPage';
 import ServicesPage from './pages/dashboard/ServicesPage';
+import ProfilePage from './pages/dashboard/ProfilePage';
 
 export default function App() {
   return (
@@ -43,7 +44,7 @@ export default function App() {
             <Route path="staff" element={<StaffPage />} />
             <Route path="services" element={<ServicesPage />} />
             <Route path="settings" element={<Navigate to="/dashboard/settings/profile" replace />} />
-            <Route path="settings/profile" element={<DashboardPlaceholderPage />} />
+            <Route path="settings/profile" element={<ProfilePage />} />
             <Route path="settings/salon" element={<DashboardPlaceholderPage />} />
           </Route>
         </Route>

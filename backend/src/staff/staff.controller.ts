@@ -45,6 +45,13 @@ export class StaffController {
     return this.staff.listMembers(salonId);
   }
 
+  @Get('me/dashboard')
+  @ApiOperation({ summary: 'Staff dashboard summary (self)' })
+  meDashboard(@CurrentUser() user: RequestUser) {
+    const salonId = this.resolveSalonId(user);
+    return this.staff.staffDashboard(salonId, user);
+  }
+
   @Post('members')
   @ApiOperation({ summary: 'Create salon user (Receptionist, Admin/Owner, or Staff)' })
   createMember(@CurrentUser() user: RequestUser, @Body() dto: CreateStaffMemberDto) {

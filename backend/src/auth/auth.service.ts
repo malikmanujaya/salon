@@ -15,6 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { RequestUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -54,6 +55,7 @@ export class AuthService {
         email: true,
         fullName: true,
         phone: true,
+        avatarUrl: true,
         role: true,
         status: true,
         salonId: true,
@@ -68,6 +70,7 @@ export class AuthService {
       email: user.email,
       fullName: user.fullName,
       phone: user.phone,
+      avatarUrl: user.avatarUrl,
       role: user.role,
       status: user.status,
       salonId: user.salonId,
@@ -201,6 +204,40 @@ export class AuthService {
   }
 
   async me(user: RequestUser): Promise<RequestUser> {
+    return this.buildPublicUser(user.id);
+  }
+
+  async updateMe(user: RequestUser, dto: UpdateMeDto): Promise<RequestUser> {
+    const data: Prisma.UserUpdateInput = {};
+    if (dto.fullName !== undefined) {
+      data.fullName = dto.fullName.trim();
+    }
+    if (dto.email !== undefined) {
+      data.email = dto.email.trim().toLowerCase();
+    }
+    if (dto.phone !== undefined) {
+      data.phone = dto.phone.trim() || null;
+    }
+    if (dto.avatarUrl !== undefined) {
+      data.avatarUrl = dto.avatarUrl.trim() || null;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return this.buildPublicUser(user.id);
+    }
+
+    try {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data,
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        throw new ConflictException('Another account already uses this email.');
+      }
+      throw e;
+    }
+
     return this.buildPublicUser(user.id);
   }
 }
