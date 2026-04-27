@@ -14,6 +14,7 @@ import BookingsPage from './pages/dashboard/BookingsPage';
 import CalendarPage from './pages/dashboard/CalendarPage';
 import CustomersPage from './pages/dashboard/CustomersPage';
 import StaffPage from './pages/dashboard/StaffPage';
+import ServicesPage from './pages/dashboard/ServicesPage';
 
 export default function App() {
   return (
@@ -40,7 +41,7 @@ export default function App() {
             <Route path="bookings/calendar" element={<CalendarPage />} />
             <Route path="customers" element={<CustomersPage />} />
             <Route path="staff" element={<StaffPage />} />
-            <Route path="services" element={<DashboardPlaceholderPage />} />
+            <Route path="services" element={<ServicesPage />} />
             <Route path="settings" element={<Navigate to="/dashboard/settings/profile" replace />} />
             <Route path="settings/profile" element={<DashboardPlaceholderPage />} />
             <Route path="settings/salon" element={<DashboardPlaceholderPage />} />
