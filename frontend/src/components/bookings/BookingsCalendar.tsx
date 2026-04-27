@@ -68,9 +68,11 @@ export function BookingsCalendar({
           borderLeft: `3px solid ${tone}`,
           border: 'none',
           borderRadius: 6,
-          padding: '2px 6px',
+          padding: '6px 8px',
+          minHeight: 40,
           fontSize: 12,
           fontWeight: 600,
+          lineHeight: 1.25,
           boxShadow: `0 1px 2px ${alpha(palette.purpleDeep, 0.08)}`,
         },
       };
@@ -238,6 +240,19 @@ function calendarOverrides(primary: string) {
 
     '.rbc-event, .rbc-day-slot .rbc-background-event': {
       outline: 'none',
+    },
+    '.rbc-day-slot .rbc-event': {
+      minHeight: 40,
+      display: 'flex',
+      alignItems: 'center',
+    },
+    '.rbc-event-label': {
+      minWidth: 72,
+      fontWeight: 700,
+    },
+    '.rbc-event-content': {
+      whiteSpace: 'normal',
+      lineHeight: 1.25,
     },
     '.rbc-event:focus, .rbc-event.rbc-selected': {
       outline: `2px solid ${alpha(primary, 0.6)}`,

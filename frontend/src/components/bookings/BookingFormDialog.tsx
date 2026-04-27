@@ -3,6 +3,7 @@ import {
   Alert,
   Button,
   Checkbox,
+  Chip,
   FormControl,
   InputLabel,
   ListItemText,
@@ -229,20 +230,29 @@ export function BookingFormDialog({
 
         <LabeledSelect label="Stylist" value={staffId} onChange={(e) => setStaffId(e.target.value)} options={staffOptions} />
 
-        {isEdit && canManageStatus ? (
-          <LabeledSelect
-            label="Status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            options={[
-              { value: 'PENDING', label: 'PENDING' },
-              { value: 'CONFIRMED', label: 'CONFIRMED' },
-              { value: 'COMPLETED', label: 'COMPLETED' },
-              { value: 'CANCELLED', label: 'CANCELLED' },
-              { value: 'NO_SHOW', label: 'NO_SHOW' },
-            ]}
-            required
-          />
+        {isEdit ? (
+          canManageStatus ? (
+            <LabeledSelect
+              label="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              options={[
+                { value: 'PENDING', label: 'PENDING' },
+                { value: 'CONFIRMED', label: 'CONFIRMED' },
+                { value: 'COMPLETED', label: 'COMPLETED' },
+                { value: 'CANCELLED', label: 'CANCELLED' },
+                { value: 'NO_SHOW', label: 'NO_SHOW' },
+              ]}
+              required
+            />
+          ) : (
+            <Stack spacing={0.75}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Status
+              </Typography>
+              <Chip label={status} size="small" variant="outlined" sx={{ alignSelf: 'flex-start' }} />
+            </Stack>
+          )
         ) : null}
 
         <FormControl fullWidth>

@@ -24,6 +24,7 @@ type CustomersResponse = CustomerSummary[] | { items?: CustomerSummary[] };
 export default function CalendarPage() {
   const { user, loading: authLoading } = useAuth();
   const qc = useQueryClient();
+  const canManageStatus = user?.role === 'SUPER_ADMIN' || user?.role === 'SALON_OWNER';
   const canUseCalendar =
     !authLoading &&
     user?.role !== undefined &&
@@ -167,6 +168,7 @@ export default function CalendarPage() {
         customers={customersQuery.data ?? []}
         services={servicesQuery.data ?? []}
         staff={staffQuery.data ?? []}
+        canManageStatus={canManageStatus}
         onCustomerCreated={() => {
           void qc.invalidateQueries({ queryKey: ['customers'] });
         }}
