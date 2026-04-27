@@ -196,17 +196,18 @@ export function AppDataTable<Row extends { id: string | number }>({
         width: '100%',
         borderRadius: 3,
         overflow: 'hidden',
-        border: (t) => `1px solid ${alpha(t.palette.divider, 1)}`,
-        boxShadow: `0 1px 0 ${alpha(palette.purpleDeep, 0.03)} inset`,
+        border: `1px solid ${alpha(palette.purpleDark, 0.22)}`,
+        background: `linear-gradient(180deg, ${palette.white} 0%, ${alpha(palette.ivory, 0.72)} 100%)`,
+        boxShadow: `0 10px 28px -20px ${alpha(palette.purpleDeep, 0.35)}, 0 1px 0 ${alpha(palette.purpleDeep, 0.04)} inset`,
       }}
     >
       <Box
         id={id ? `${id}-table-header` : undefined}
         sx={{
-          borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 1)}`,
+          borderBottom: `1px solid ${alpha(palette.purpleDark, 0.22)}`,
           px: { xs: 2, md: 3 },
           py: 2,
-          bgcolor: 'background.paper',
+          background: `linear-gradient(180deg, ${alpha(palette.ivory, 0.95)} 0%, ${alpha(palette.roseLight, 0.42)} 100%)`,
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -225,13 +226,13 @@ export function AppDataTable<Row extends { id: string | number }>({
                       py: 0.85,
                       border: 'none',
                       bgcolor: 'transparent',
-                      color: active ? 'primary.main' : 'text.secondary',
+                      color: active ? palette.purple : alpha(palette.purpleDeep, 0.62),
                       fontSize: '0.875rem',
                       fontWeight: 600,
                       cursor: 'pointer',
                       borderBottom: `2px solid ${active ? palette.purple : 'transparent'}`,
                       transition: 'all 120ms ease',
-                      '&:hover': { color: 'text.primary' },
+                      '&:hover': { color: palette.purpleDark },
                     }}
                   >
                     {tab.label}
@@ -288,6 +289,15 @@ export function AppDataTable<Row extends { id: string | number }>({
                           setSearchExpanded(true);
                         }}
                         size="small"
+                        sx={{
+                          color: alpha(palette.purpleDeep, 0.62),
+                          border: `1px solid ${alpha(palette.purpleDark, 0.2)}`,
+                          bgcolor: alpha(palette.white, 0.86),
+                          '&:hover': {
+                            color: palette.purpleDark,
+                            bgcolor: alpha(palette.roseLight, 0.55),
+                          },
+                        }}
                       >
                         <SearchRoundedIcon />
                       </IconButton>
@@ -301,6 +311,15 @@ export function AppDataTable<Row extends { id: string | number }>({
                           setSearchQuery('');
                         }}
                         size="small"
+                        sx={{
+                          color: alpha(palette.purpleDeep, 0.62),
+                          border: `1px solid ${alpha(palette.purpleDark, 0.2)}`,
+                          bgcolor: alpha(palette.white, 0.86),
+                          '&:hover': {
+                            color: palette.purpleDark,
+                            bgcolor: alpha(palette.roseLight, 0.55),
+                          },
+                        }}
                       >
                         <CloseRoundedIcon />
                       </IconButton>
@@ -317,6 +336,15 @@ export function AppDataTable<Row extends { id: string | number }>({
                       onRefresh();
                     }}
                     size="small"
+                    sx={{
+                      color: alpha(palette.purpleDeep, 0.62),
+                      border: `1px solid ${alpha(palette.purpleDark, 0.2)}`,
+                      bgcolor: alpha(palette.white, 0.86),
+                      '&:hover': {
+                        color: palette.purpleDark,
+                        bgcolor: alpha(palette.roseLight, 0.55),
+                      },
+                    }}
                   >
                     <RefreshRoundedIcon />
                   </IconButton>
@@ -348,9 +376,9 @@ export function AppDataTable<Row extends { id: string | number }>({
           overflowX: 'auto',
           overflowY: 'auto',
           '&::-webkit-scrollbar': { height: 8, width: 8 },
-          '&::-webkit-scrollbar-track': { background: alpha(palette.purpleDeep, 0.08), borderRadius: 2 },
-          '&::-webkit-scrollbar-thumb': { background: alpha(palette.purpleDeep, 0.25), borderRadius: 2 },
-          '&::-webkit-scrollbar-thumb:hover': { background: alpha(palette.purpleDeep, 0.35) },
+          '&::-webkit-scrollbar-track': { background: alpha(palette.rose, 0.45), borderRadius: 8 },
+          '&::-webkit-scrollbar-thumb': { background: alpha(palette.purpleDark, 0.3), borderRadius: 8 },
+          '&::-webkit-scrollbar-thumb:hover': { background: alpha(palette.purpleDark, 0.44) },
         }}
       >
         <Table stickyHeader sx={{ width: '100%', tableLayout: 'auto' }}>
@@ -361,8 +389,8 @@ export function AppDataTable<Row extends { id: string | number }>({
                   padding="checkbox"
                   sx={{
                     width: 52,
-                    bgcolor: 'background.paper',
-                    borderBottom: (t) => `2px solid ${alpha(t.palette.divider, 1)}`,
+                    bgcolor: alpha(palette.roseLight, 0.38),
+                    borderBottom: `2px solid ${alpha(palette.purpleDark, 0.28)}`,
                   }}
                 >
                   <Checkbox
@@ -386,13 +414,13 @@ export function AppDataTable<Row extends { id: string | number }>({
                   sx={{
                     minWidth: column.minWidth,
                     width: column.width,
-                    bgcolor: 'background.paper',
-                    color: 'text.primary',
+                    bgcolor: alpha(palette.roseLight, 0.38),
+                    color: alpha(palette.purpleDeep, 0.84),
                     fontSize: '0.75rem',
                     fontWeight: 700,
                     letterSpacing: '0.06em',
                     textTransform: 'uppercase',
-                    borderBottom: (t) => `2px solid ${alpha(t.palette.divider, 1)}`,
+                    borderBottom: `2px solid ${alpha(palette.purpleDark, 0.28)}`,
                   }}
                 >
                   {column.label}
@@ -404,13 +432,13 @@ export function AppDataTable<Row extends { id: string | number }>({
                   align="center"
                   sx={{
                     width: 108,
-                    bgcolor: 'background.paper',
-                    color: 'text.primary',
+                    bgcolor: alpha(palette.roseLight, 0.38),
+                    color: alpha(palette.purpleDeep, 0.84),
                     fontSize: '0.75rem',
                     fontWeight: 700,
                     letterSpacing: '0.06em',
                     textTransform: 'uppercase',
-                    borderBottom: (t) => `2px solid ${alpha(t.palette.divider, 1)}`,
+                    borderBottom: `2px solid ${alpha(palette.purpleDark, 0.28)}`,
                   }}
                 >
                   Actions
@@ -461,13 +489,13 @@ export function AppDataTable<Row extends { id: string | number }>({
                     }}
                     sx={{
                       cursor: !selectable && onRowClick ? 'pointer' : 'default',
-                      bgcolor: index % 2 === 0 ? 'background.paper' : alpha(palette.purpleDeep, 0.015),
-                      '&:hover': { bgcolor: alpha(palette.purple, 0.06) },
+                      bgcolor: index % 2 === 0 ? alpha(palette.white, 0.96) : alpha(palette.ivory, 0.68),
+                      '&:hover': { bgcolor: alpha(palette.roseLight, 0.5) },
                       '&:last-child td': { borderBottom: 0 },
                     }}
                   >
                     {selectable ? (
-                      <TableCell padding="checkbox" sx={{ borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 1)}` }}>
+                      <TableCell padding="checkbox" sx={{ borderBottom: `1px solid ${alpha(palette.purpleDark, 0.14)}` }}>
                         <Checkbox
                           checked={selected}
                           onChange={() => {
@@ -486,14 +514,17 @@ export function AppDataTable<Row extends { id: string | number }>({
                       <TableCell
                         key={String(column.id)}
                         align={column.align ?? 'left'}
-                        sx={{ borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 1)}` }}
+                        sx={{
+                          borderBottom: `1px solid ${alpha(palette.purpleDark, 0.14)}`,
+                          color: alpha(palette.purpleDeep, 0.86),
+                        }}
                       >
                         {cellValue(row, column)}
                       </TableCell>
                     ))}
 
                     {hasActions ? (
-                      <TableCell align="center" sx={{ borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 1)}` }}>
+                      <TableCell align="center" sx={{ borderBottom: `1px solid ${alpha(palette.purpleDark, 0.14)}` }}>
                         {onEdit ? (
                           <IconButton
                             size="small"
@@ -502,6 +533,12 @@ export function AppDataTable<Row extends { id: string | number }>({
                             onClick={(event) => {
                               event.stopPropagation();
                               onEdit(row);
+                            }}
+                            sx={{
+                              bgcolor: alpha(palette.orchidLight, 0.3),
+                              '&:hover': {
+                                bgcolor: alpha(palette.orchid, 0.35),
+                              },
                             }}
                           >
                             <EditRoundedIcon fontSize="small" />
@@ -515,6 +552,13 @@ export function AppDataTable<Row extends { id: string | number }>({
                             onClick={(event) => {
                               event.stopPropagation();
                               onDelete(row);
+                            }}
+                            sx={{
+                              ml: 0.5,
+                              bgcolor: alpha(palette.rose, 0.45),
+                              '&:hover': {
+                                bgcolor: alpha(palette.roseDark, 0.24),
+                              },
                             }}
                           >
                             <DeleteOutlineRoundedIcon fontSize="small" />
@@ -533,10 +577,10 @@ export function AppDataTable<Row extends { id: string | number }>({
       <Box
         id={id ? `${id}-table-pagination` : undefined}
         sx={{
-          borderTop: (t) => `1px solid ${alpha(t.palette.divider, 1)}`,
+          borderTop: `1px solid ${alpha(palette.purpleDark, 0.2)}`,
           px: { xs: 2, md: 3 },
           py: 1.5,
-          bgcolor: 'background.paper',
+          bgcolor: alpha(palette.ivory, 0.8),
           display: 'flex',
           flexDirection: { xs: 'column', sm: 'row' },
           alignItems: { sm: 'center' },
@@ -545,7 +589,7 @@ export function AppDataTable<Row extends { id: string | number }>({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" color="text.secondary" fontWeight={600}>
+          <Typography variant="body2" sx={{ color: alpha(palette.purpleDeep, 0.76) }} fontWeight={600}>
             Rows per page:
           </Typography>
           <TextField
@@ -558,7 +602,18 @@ export function AppDataTable<Row extends { id: string | number }>({
               setPage(1);
               onRowsPerPageChange?.(next);
             }}
-            sx={{ minWidth: 80 }}
+            sx={{
+              minWidth: 80,
+              '& .MuiOutlinedInput-root': {
+                bgcolor: alpha(palette.white, 0.88),
+                '& fieldset': {
+                  borderColor: alpha(palette.purpleDark, 0.26),
+                },
+                '&:hover fieldset': {
+                  borderColor: alpha(palette.purpleDark, 0.4),
+                },
+              },
+            }}
           >
             {rowsPerPageOptions.map((option) => (
               <MenuItem key={option} value={option}>
@@ -566,7 +621,7 @@ export function AppDataTable<Row extends { id: string | number }>({
               </MenuItem>
             ))}
           </TextField>
-          <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+          <Typography variant="body2" sx={{ color: alpha(palette.purpleDeep, 0.68), whiteSpace: 'nowrap' }}>
             {totalCount > 0
               ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
               : '0 of 0'}
