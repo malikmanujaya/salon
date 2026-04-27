@@ -402,76 +402,6 @@ export default function DashboardLayout() {
       </Box>
       <Divider sx={{ opacity: 0.6 }} />
       <List sx={{ px: collapsed && mdUp ? 0.75 : 1.25, py: 1.5, flex: 1, overflowY: 'auto' }}>{renderNav()}</List>
-      <Divider sx={{ opacity: 0.6 }} />
-      <Box sx={{ p: collapsed && mdUp ? 1 : 2 }}>
-        {!(collapsed && mdUp) ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-            <Avatar
-              sx={{
-                width: 40,
-                height: 40,
-                bgcolor: 'primary.main',
-                fontSize: '0.95rem',
-                fontWeight: 700,
-              }}
-            >
-              {user?.fullName?.charAt(0)?.toUpperCase() ?? '?'}
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="subtitle2" fontWeight={700} noWrap>
-                {user?.fullName}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" noWrap display="block">
-                {user?.email}
-              </Typography>
-            </Box>
-          </Box>
-        ) : (
-          <Tooltip title={user?.fullName ?? 'Account'} placement="right">
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
-              <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 700 }}>
-                {user?.fullName?.charAt(0)?.toUpperCase() ?? '?'}
-              </Avatar>
-            </Box>
-          </Tooltip>
-        )}
-        {collapsed && mdUp ? (
-          <Tooltip title="Sign out" placement="right">
-            <ListItemButton
-              onClick={handleLogout}
-              sx={{
-                borderRadius: 2,
-                color: 'text.secondary',
-                py: 1,
-                justifyContent: 'center',
-                px: 1,
-                '&:hover': { bgcolor: alpha(palette.purpleDeep, 0.06), color: 'error.main' },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 0, justifyContent: 'center', color: 'inherit' }}>
-                <LogoutRoundedIcon fontSize="small" />
-              </ListItemIcon>
-            </ListItemButton>
-          </Tooltip>
-        ) : (
-          <ListItemButton
-            onClick={handleLogout}
-            sx={{
-              borderRadius: 2,
-              color: 'text.secondary',
-              py: 1,
-              justifyContent: 'flex-start',
-              px: 2,
-              '&:hover': { bgcolor: alpha(palette.purpleDeep, 0.06), color: 'error.main' },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 40, justifyContent: 'center', color: 'inherit' }}>
-              <LogoutRoundedIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="Sign out" primaryTypographyProps={{ fontWeight: 600 }} />
-          </ListItemButton>
-        )}
-      </Box>
     </Box>
   );
 
@@ -570,6 +500,46 @@ export default function DashboardLayout() {
           <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary' }}>
             {pageTitle}
           </Typography>
+          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+            <Avatar
+              sx={{
+                width: 36,
+                height: 36,
+                bgcolor: 'primary.main',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+              }}
+            >
+              {user?.fullName?.charAt(0)?.toUpperCase() ?? '?'}
+            </Avatar>
+            <Box sx={{ minWidth: 0, display: { xs: 'none', lg: 'block' } }}>
+              <Typography variant="subtitle2" fontWeight={700} noWrap>
+                {user?.fullName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" noWrap display="block">
+                {user?.email}
+              </Typography>
+            </Box>
+            <ListItemButton
+              onClick={handleLogout}
+              sx={{
+                borderRadius: 2,
+                color: 'text.secondary',
+                py: 0.75,
+                px: 1.25,
+                minHeight: 36,
+                '&:hover': { bgcolor: alpha(palette.purpleDeep, 0.06), color: 'error.main' },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 30, justifyContent: 'center', color: 'inherit' }}>
+                <LogoutRoundedIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Sign out"
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap' }}
+              />
+            </ListItemButton>
+          </Box>
         </Box>
         <Box sx={{ flex: 1, p: { xs: 2.5, sm: 3.5 }, pt: { xs: 2, sm: 3.5 } }}>
           <Outlet />

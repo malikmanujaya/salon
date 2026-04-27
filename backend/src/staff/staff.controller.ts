@@ -1,10 +1,20 @@
-import { Body, Controller, ForbiddenException, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser, type RequestUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { requireSalonId } from '../common/require-salon';
 import { CreateStaffMemberDto } from './dto/create-staff-member.dto';
+import { UpdateStaffMemberDto } from './dto/update-staff-member.dto';
 import { StaffDirectoryService } from './staff.service';
 
 @ApiTags('staff')
@@ -14,10 +24,10 @@ import { StaffDirectoryService } from './staff.service';
 export class StaffController {
   constructor(private readonly staff: StaffDirectoryService) {}
 
-  private static readonly SUPER_ADMIN_SALON_ID = 'cmofwb8i70001jbrc1f7zigpf';
+  private static readonly SINGLE_SALON_ID = 'cmofwb8i70001jbrc1f7zigpf';
 
-  private resolveSalonId(user: RequestUser): string {
-    return user.role === 'SUPER_ADMIN' ? StaffController.SUPER_ADMIN_SALON_ID : requireSalonId(user);
+  private resolveSalonId(_user: RequestUser): string {
+    return StaffController.SINGLE_SALON_ID;
   }
 
   @Get()
@@ -43,5 +53,23 @@ export class StaffController {
     }
     const salonId = this.resolveSalonId(user);
     return this.staff.createMember(salonId, dto, user);
+  }
+
+  @Patch('members/:id')
+  @ApiOperation({ summary: 'Update salon team member details/role/status' })
+  updateMember(
+    @CurrentUser() user: RequestUser,
+    @Param('id') memberId: string,
+    @Body() dto: UpdateStaffMemberDto,
+  ) {
+    const salonId = this.resolveSalonId(user);
+    return this.staff.updateMember(salonId, memberId, dto, user);
+  }
+
+  @Delete('members/:id')
+  @ApiOperation({ summary: 'Deactivate salon team member account' })
+  deactivateMember(@CurrentUser() user: RequestUser, @Param('id') memberId: string) {
+    const salonId = this.resolveSalonId(user);
+    return this.staff.deactivateMember(salonId, memberId, user);
   }
 }

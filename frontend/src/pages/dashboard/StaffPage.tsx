@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AppDataTable, type AppTableColumn } from '@/components/ui/AppDataTable';
 import { CreateModal } from '@/components/ui/CreateModal';
+import { DeleteConfirmModal } from '@/components/ui/DeleteConfirmModal';
+import { EditModal } from '@/components/ui/EditModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LabeledSelect } from '@/components/ui/LabeledSelect';
 import { LabeledTextField } from '@/components/ui/LabeledTextField';
@@ -13,8 +15,6 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { CreateSalonStaffRole, SalonStaffMember } from '@/types/staff';
-
-const SUPER_ADMIN_SALON_ID = 'cmofwb8i70001jbrc1f7zigpf';
 
 const ROLE_OPTIONS: { value: CreateSalonStaffRole; label: string }[] = [
   { value: 'SALON_OWNER', label: 'Admin (salon owner)' },
@@ -51,17 +51,18 @@ function roleChipColor(
 }
 
 export default function StaffPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const qc = useQueryClient();
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const salonId = user?.salonId;
   const canManage =
     user?.role === 'SUPER_ADMIN' || user?.role === 'SALON_OWNER';
-  const effectiveSalonId = isSuperAdmin ? SUPER_ADMIN_SALON_ID : salonId;
 
   const [openCreate, setOpenCreate] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<SalonStaffMember | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<SalonStaffMember | null>(null);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -71,12 +72,14 @@ export default function StaffPage() {
   const [title, setTitle] = useState('');
 
   const membersQuery = useQuery({
-    queryKey: ['staff-members', effectiveSalonId],
+    queryKey: ['staff-members'],
     queryFn: async () => {
       const { data } = await api.get<SalonStaffMember[]>('/staff/members');
       return data;
     },
-    enabled: Boolean(effectiveSalonId) && user?.role !== 'CUSTOMER' && user?.role !== 'STAFF',
+    enabled:
+      !authLoading &&
+      user?.role !== 'CUSTOMER',
   });
 
   const rows = membersQuery.data ?? [];
@@ -117,23 +120,20 @@ export default function StaffPage() {
     },
   ];
 
-  if (user?.role === 'CUSTOMER' || user?.role === 'STAFF') {
+  if (authLoading) {
     return (
       <Box>
         <PageHeader title="Staff" description="Team directory" />
-        <EmptyState title="Not available" description="You do not have access to this page." />
+        <AppDataTable columns={columns} rows={[]} loading emptyTitle="Loading staff..." />
       </Box>
     );
   }
 
-  if (!isSuperAdmin && !salonId) {
+  if (user?.role === 'CUSTOMER') {
     return (
       <Box>
-        <PageHeader title="Staff" description="Manage salon team accounts." />
-        <EmptyState
-          title="No salon linked"
-          description="Sign in with a salon admin account to manage staff."
-        />
+        <PageHeader title="Staff" description="Team directory" />
+        <EmptyState title="Not available" description="You do not have access to this page." />
       </Box>
     );
   }
@@ -170,6 +170,60 @@ export default function StaffPage() {
     }
   };
 
+  const openEdit = (member: SalonStaffMember) => {
+    setEditing(member);
+    setFullName(member.fullName);
+    setPhone(member.phone ?? '');
+    setRole(member.role as CreateSalonStaffRole);
+    setTitle(member.staffProfile?.title ?? '');
+    setActionError(null);
+  };
+
+  const submitEdit = async () => {
+    if (!editing) return;
+    setActionError(null);
+    if (!fullName.trim()) {
+      setActionError('Full name is required.');
+      return;
+    }
+    setUpdating(true);
+    try {
+      await api.patch(`/staff/members/${editing.id}`, {
+        fullName: fullName.trim(),
+        phone: phone.trim() || null,
+        role,
+        title: role === 'STAFF' ? title.trim() || null : null,
+      });
+      setEditing(null);
+      setFullName('');
+      setPhone('');
+      setRole('STAFF');
+      setTitle('');
+      await qc.invalidateQueries({ queryKey: ['staff-members'] });
+      await qc.invalidateQueries({ queryKey: ['staff'] });
+    } catch (err) {
+      setActionError(getApiErrorMessage(err, 'Could not update member.'));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const confirmDeactivate = async () => {
+    if (!deactivateTarget) return;
+    setDeactivating(true);
+    setActionError(null);
+    try {
+      await api.delete(`/staff/members/${deactivateTarget.id}`);
+      setDeactivateTarget(null);
+      await qc.invalidateQueries({ queryKey: ['staff-members'] });
+      await qc.invalidateQueries({ queryKey: ['staff'] });
+    } catch (err) {
+      setActionError(getApiErrorMessage(err, 'Could not deactivate member.'));
+    } finally {
+      setDeactivating(false);
+    }
+  };
+
   const roleChoices =
     user?.role === 'SALON_OWNER'
       ? ROLE_OPTIONS.filter((o) => o.value !== 'SALON_OWNER')
@@ -179,11 +233,7 @@ export default function StaffPage() {
     <Box>
       <PageHeader
         title="Staff"
-        description={
-          isSuperAdmin
-            ? `Salon team for ${SUPER_ADMIN_SALON_ID}. Create receptionists, admins, and stylists.`
-            : 'Create receptionists and stylists. Only a platform admin can add another salon admin.'
-        }
+        description="Create receptionists and stylists. Only a platform admin can add another salon admin."
         actions={
           canManage ? (
             <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={() => setOpenCreate(true)}>
@@ -214,7 +264,9 @@ export default function StaffPage() {
       <AppDataTable
         columns={columns}
         rows={rows}
-        showActions={false}
+        showActions={canManage}
+        onEdit={canManage ? openEdit : undefined}
+        onDelete={canManage ? (row) => setDeactivateTarget(row) : undefined}
         toolbar={
           <Stack direction="row" spacing={2} alignItems="center">
             <Box sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
@@ -261,6 +313,44 @@ export default function StaffPage() {
           />
         ) : null}
       </CreateModal>
+
+      <EditModal
+        open={Boolean(editing)}
+        onClose={() => setEditing(null)}
+        title="Edit team member"
+        submitLabel="Save changes"
+        onSubmit={submitEdit}
+        loading={updating}
+      >
+        <LabeledSelect
+          label="Role"
+          value={role}
+          onChange={(e) => setRole(e.target.value as CreateSalonStaffRole)}
+          options={roleChoices.map((o) => ({ value: o.value, label: o.label }))}
+          required
+        />
+        <LabeledTextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+        <LabeledTextField label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        {role === 'STAFF' ? (
+          <LabeledTextField
+            label="Title (optional)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Senior stylist"
+          />
+        ) : null}
+      </EditModal>
+
+      <DeleteConfirmModal
+        open={Boolean(deactivateTarget)}
+        title="Deactivate this team member?"
+        entityLabel={deactivateTarget?.fullName}
+        description="The account will be disabled and won't be able to sign in."
+        confirmLabel="Deactivate"
+        loading={deactivating}
+        onClose={() => setDeactivateTarget(null)}
+        onConfirm={confirmDeactivate}
+      />
     </Box>
   );
 }
