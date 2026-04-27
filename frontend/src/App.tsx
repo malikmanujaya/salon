@@ -9,7 +9,6 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardHomePage from './pages/dashboard/DashboardHomePage';
-import DashboardPlaceholderPage from './pages/dashboard/DashboardPlaceholderPage';
 import BookingsPage from './pages/dashboard/BookingsPage';
 import CalendarPage from './pages/dashboard/CalendarPage';
 import CustomersPage from './pages/dashboard/CustomersPage';
@@ -45,7 +44,6 @@ export default function App() {
             <Route path="services" element={<ServicesPage />} />
             <Route path="settings" element={<Navigate to="/dashboard/settings/profile" replace />} />
             <Route path="settings/profile" element={<ProfilePage />} />
-            <Route path="settings/salon" element={<DashboardPlaceholderPage />} />
           </Route>
         </Route>
       </Routes>

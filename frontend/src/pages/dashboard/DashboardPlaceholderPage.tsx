@@ -30,10 +30,6 @@ const SECTIONS: Record<string, { title: string; body: string }> = {
     title: 'Profile',
     body: 'Your account, password, and notification preferences.',
   },
-  '/dashboard/settings/salon': {
-    title: 'Salon',
-    body: 'Business details, branches, and branding.',
-  },
 };
 
 export default function DashboardPlaceholderPage() {

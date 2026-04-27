@@ -83,7 +83,6 @@ const NAV: NavEntry[] = [
     icon: SettingsRoundedIcon,
     children: [
       { to: '/dashboard/settings/profile', label: 'Profile' },
-      { to: '/dashboard/settings/salon', label: 'Salon' },
     ],
   },
 ];
@@ -118,7 +117,6 @@ function groupActive(pathname: string, children: NavChild[]): boolean {
 }
 
 function getDashboardPageTitle(pathname: string, isCustomer: boolean): string {
-  if (pathname.startsWith('/dashboard/settings/salon')) return 'Salon';
   if (pathname.startsWith('/dashboard/settings/profile')) return 'Profile';
   if (pathname.startsWith('/dashboard/bookings/calendar')) return 'Calendar';
   if (pathname.startsWith('/dashboard/bookings')) return 'All bookings';
