@@ -1,8 +1,7 @@
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 
-import { elevationShadow, gradients, palette } from '@/theme/palette';
+import { BrandLogoNavLink } from './BrandLogo';
 
 export default function Logo() {
   return (
@@ -12,54 +11,7 @@ export default function Logo() {
       whileTap={{ scale: 0.98 }}
       sx={{ display: 'inline-flex' }}
     >
-      <Box
-        component={Link}
-        to="/"
-        sx={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 1.25,
-          textDecoration: 'none',
-          color: 'inherit',
-        }}
-      >
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: '12px',
-            background: gradients.roseOrchidPurple,
-            display: 'grid',
-            placeItems: 'center',
-            boxShadow: elevationShadow.logoIcon,
-          }}
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 64 64"
-            fill="none"
-            aria-hidden
-          >
-            <path
-              d="M20 42 C 20 28, 32 20, 44 20 C 38 28, 36 36, 32 44 C 28 38, 24 38, 20 42 Z"
-              fill={palette.white}
-              opacity="0.95"
-            />
-          </svg>
-        </Box>
-        <Typography
-          variant="h5"
-          sx={{
-            fontFamily: '"Playfair Display", serif',
-            fontWeight: 700,
-            color: 'text.primary',
-            letterSpacing: '-0.01em',
-          }}
-        >
-          Lumora
-        </Typography>
-      </Box>
+      <BrandLogoNavLink />
     </Box>
   );
 }

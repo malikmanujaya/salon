@@ -33,8 +33,9 @@ import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import type { SvgIconComponent } from '@mui/icons-material';
 
 import { useAuth } from '../context/AuthContext';
+import { BrandLogo, BrandLogoNavLink } from '@/components/brand/BrandLogo';
 import { SALON_DISPLAY_NAME } from '@/constants/display';
-import { gradients, palette } from '@/theme/palette';
+import { palette } from '@/theme/palette';
 
 const STORAGE_KEY = 'lumora_sidebar_collapsed';
 const DRAWER_EXPANDED = 280;
@@ -116,6 +117,18 @@ function groupActive(pathname: string, children: NavChild[]): boolean {
   return children.some((c) => childPathActive(pathname, c));
 }
 
+function getDashboardPageTitle(pathname: string, isCustomer: boolean): string {
+  if (pathname.startsWith('/dashboard/settings/salon')) return 'Salon';
+  if (pathname.startsWith('/dashboard/settings/profile')) return 'Profile';
+  if (pathname.startsWith('/dashboard/bookings/calendar')) return 'Calendar';
+  if (pathname.startsWith('/dashboard/bookings')) return 'All bookings';
+  if (pathname.startsWith('/dashboard/customers')) return 'Customers';
+  if (pathname.startsWith('/dashboard/staff')) return 'Staff';
+  if (pathname.startsWith('/dashboard/services')) return 'Services';
+  if (pathname === '/dashboard' || pathname === '/dashboard/') return isCustomer ? 'Home' : 'Overview';
+  return 'Dashboard';
+}
+
 export default function DashboardLayout() {
   const theme = useTheme();
   const mdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -139,6 +152,11 @@ export default function DashboardLayout() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   const drawerWidth = mdUp ? (collapsed ? DRAWER_COLLAPSED : DRAWER_EXPANDED) : DRAWER_EXPANDED;
+
+  const pageTitle = useMemo(
+    () => getDashboardPageTitle(pathname, user?.role === 'CUSTOMER'),
+    [pathname, user?.role],
+  );
 
   useEffect(() => {
     try {
@@ -313,80 +331,48 @@ export default function DashboardLayout() {
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Toolbar
+      <Box
         sx={{
           px: collapsed && mdUp ? 1 : 2,
-          py: 1.5,
-          minHeight: 64,
+          py: collapsed && mdUp ? 2 : 2.5,
+          borderBottom: `1px solid ${alpha(palette.purpleDeep, 0.08)}`,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: collapsed && mdUp ? 'center' : 'space-between',
-          gap: 1,
+          flexDirection: 'column',
+          alignItems: collapsed && mdUp ? 'center' : 'stretch',
+          minHeight: collapsed && mdUp ? 88 : 96,
+          justifyContent: 'center',
         }}
       >
-        {!(collapsed && mdUp) ? (
-          <Box
-            component={RouterLink}
-            to="/dashboard"
-            onClick={() => setMobileOpen(false)}
-            sx={{ textDecoration: 'none', color: 'inherit', minWidth: 0, flex: 1 }}
-          >
-            <Typography
-              variant="h6"
-              sx={{
-                fontFamily: '"Playfair Display", Georgia, serif',
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                lineHeight: 1.1,
-              }}
-            >
-              Lumora
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }} noWrap>
-              {user?.role === 'SUPER_ADMIN'
-                ? 'Platform · all salons'
-                : user?.role === 'CUSTOMER'
-                  ? SALON_DISPLAY_NAME
-                  : (user?.salon?.name ?? SALON_DISPLAY_NAME)}
-            </Typography>
-          </Box>
-        ) : (
-          <Tooltip title="Lumora home" placement="right">
-            <Box
-              component={RouterLink}
-              to="/dashboard"
-              onClick={() => setMobileOpen(false)}
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: 2,
-                background: gradients.roseOrchidPurple,
-                display: 'grid',
-                placeItems: 'center',
-                color: palette.white,
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                textDecoration: 'none',
-              }}
-            >
-              L
-            </Box>
-          </Tooltip>
-        )}
-        {mdUp ? (
-          <IconButton
-            size="small"
-            onClick={() => setCollapsed((c) => !c)}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            sx={{
-              border: `1px solid ${alpha(palette.purpleDeep, 0.08)}`,
-              bgcolor: alpha(palette.ivory, 0.9),
-            }}
-          >
-            {collapsed ? <ChevronRightRoundedIcon fontSize="small" /> : <ChevronLeftRoundedIcon fontSize="small" />}
-          </IconButton>
-        ) : null}
-      </Toolbar>
+        <Box
+          component={RouterLink}
+          to="/dashboard"
+          onClick={() => setMobileOpen(false)}
+          sx={{
+            textDecoration: 'none',
+            color: 'inherit',
+            textAlign: collapsed && mdUp ? 'center' : 'left',
+          }}
+        >
+          {collapsed && mdUp ? (
+            <Tooltip title="Lumora · home" placement="right">
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <BrandLogo variant="sidebar-collapsed" />
+              </Box>
+            </Tooltip>
+          ) : (
+            <>
+              <BrandLogo variant="sidebar-expanded" />
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }} noWrap>
+                {user?.role === 'SUPER_ADMIN'
+                  ? 'Platform · all salons'
+                  : user?.role === 'CUSTOMER'
+                    ? SALON_DISPLAY_NAME
+                    : (user?.salon?.name ?? SALON_DISPLAY_NAME)}
+              </Typography>
+            </>
+          )}
+        </Box>
+      </Box>
       <Divider sx={{ opacity: 0.6 }} />
       <List sx={{ px: collapsed && mdUp ? 0.75 : 1.25, py: 1.5, flex: 1, overflowY: 'auto' }}>{renderNav()}</List>
       <Divider sx={{ opacity: 0.6 }} />
@@ -482,9 +468,7 @@ export default function DashboardLayout() {
           <IconButton color="inherit" edge="start" onClick={() => setMobileOpen(true)} aria-label="open menu">
             <MenuRoundedIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ fontFamily: '"Playfair Display", serif', fontWeight: 700 }}>
-            Lumora
-          </Typography>
+          <BrandLogoNavLink to="/dashboard" onClick={() => setMobileOpen(false)} compact />
         </Toolbar>
       </Box>
 
@@ -521,6 +505,45 @@ export default function DashboardLayout() {
         }}
       >
         <Toolbar sx={{ display: { md: 'none' } }} />
+        <Box
+          component="header"
+          sx={{
+            display: { xs: 'none', md: 'flex' },
+            alignItems: 'center',
+            gap: 1.5,
+            px: 2.5,
+            py: 1.25,
+            minHeight: 56,
+            borderBottom: `1px solid ${alpha(palette.purpleDeep, 0.06)}`,
+            bgcolor: alpha(palette.ivory, 0.98),
+            backdropFilter: 'blur(10px)',
+            position: 'sticky',
+            top: 0,
+            zIndex: theme.zIndex.appBar - 1,
+          }}
+        >
+          <IconButton
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+              bgcolor: alpha(theme.palette.primary.main, 0.08),
+              color: 'primary.main',
+              flexShrink: 0,
+              '&:hover': {
+                bgcolor: alpha(theme.palette.primary.main, 0.14),
+              },
+            }}
+          >
+            {collapsed ? <ChevronRightRoundedIcon fontSize="small" /> : <ChevronLeftRoundedIcon fontSize="small" />}
+          </IconButton>
+          <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary' }}>
+            {pageTitle}
+          </Typography>
+        </Box>
         <Box sx={{ flex: 1, p: { xs: 2.5, sm: 3.5 }, pt: { xs: 2, sm: 3.5 } }}>
           <Outlet />
         </Box>
