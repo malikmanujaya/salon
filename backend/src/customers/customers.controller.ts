@@ -15,6 +15,13 @@ import { QueryCustomersDto } from './dto/query-customers.dto';
 export class CustomersController {
   constructor(private readonly customers: CustomersService) {}
 
+  @Get('me/dashboard')
+  @ApiOperation({ summary: 'Customer dashboard summary (self)' })
+  meDashboard(@CurrentUser() user: RequestUser) {
+    const salonId = requireSalonId(user);
+    return this.customers.customerDashboard(salonId, user);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Search customers (optional q)' })
   list(@CurrentUser() user: RequestUser, @Query() query: QueryCustomersDto) {

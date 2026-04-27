@@ -1,14 +1,22 @@
-import { Box, Paper, Typography, alpha } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+import { Alert, Box, Button, Paper, Typography, alpha } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import EventAvailableRoundedIcon from '@mui/icons-material/EventAvailableRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
+import TaskAltRoundedIcon from '@mui/icons-material/TaskAltRounded';
+import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
+import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
+import { useQuery } from '@tanstack/react-query';
 
 import { DashboardModuleDemo } from '../../components/dashboard/DashboardModuleDemo';
 import { PageHeader } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { SALON_DISPLAY_NAME } from '@/constants/display';
+import { api } from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { palette } from '@/theme/palette';
+import type { CustomerDashboardSummary } from '@/types/customerDashboard';
 
 function StatCard({
   title,
@@ -62,6 +70,149 @@ function StatCard({
 
 export default function DashboardHomePage() {
   const { user } = useAuth();
+  const isCustomer = user?.role === 'CUSTOMER';
+  const salonId = user?.salonId;
+
+  const customerDashboardQuery = useQuery({
+    queryKey: ['customer-dashboard', user?.id],
+    queryFn: async () => {
+      const { data } = await api.get<CustomerDashboardSummary>('/customers/me/dashboard');
+      return data;
+    },
+    enabled: isCustomer && Boolean(salonId),
+  });
+
+  if (isCustomer) {
+    const data = customerDashboardQuery.data;
+    const nextBooking = data?.nextBooking;
+    return (
+      <Box>
+        <PageHeader
+          title={`Hello, ${user?.fullName?.split(' ')[0] ?? 'there'}`}
+          description={`Your ${SALON_DISPLAY_NAME} booking dashboard.`}
+          actions={
+            <Button component={RouterLink} to="/dashboard/bookings" variant="contained">
+              Book / manage appointments
+            </Button>
+          }
+        />
+
+        {customerDashboardQuery.error ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {getApiErrorMessage(customerDashboardQuery.error, 'Could not load your dashboard.')}
+          </Alert>
+        ) : null}
+
+        <Grid container spacing={2.5} sx={{ mb: 2 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              title="Upcoming"
+              value={String(data?.totals.upcoming ?? 0)}
+              subtitle="Future appointments"
+              icon={AccessTimeRoundedIcon}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              title="Completed"
+              value={String(data?.totals.completed ?? 0)}
+              subtitle="Past completed visits"
+              icon={TaskAltRoundedIcon}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              title="Cancelled"
+              value={String(data?.totals.cancelled ?? 0)}
+              subtitle="Cancelled or no-show"
+              icon={CancelRoundedIcon}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard
+              title="Lifetime"
+              value={String(data?.totals.total ?? 0)}
+              subtitle="All your bookings"
+              icon={EventAvailableRoundedIcon}
+            />
+          </Grid>
+        </Grid>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.5,
+            mb: 2.5,
+            borderRadius: 3,
+            border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.1)}`,
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
+            Next appointment
+          </Typography>
+          {nextBooking ? (
+            <>
+              <Typography variant="body1" fontWeight={600}>
+                {new Date(nextBooking.startTime).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                Services: {nextBooking.services.map((x) => x.service.name).join(', ')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Stylist: {nextBooking.staff?.user.fullName ?? 'Unassigned'}
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No upcoming appointments yet. Create one from the bookings page.
+            </Typography>
+          )}
+        </Paper>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.5,
+            borderRadius: 3,
+            border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.1)}`,
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.25 }}>
+            Recent bookings
+          </Typography>
+          {data?.recentBookings.length ? (
+            <Box sx={{ display: 'grid', gap: 1.25 }}>
+              {data.recentBookings.map((booking) => (
+                <Box
+                  key={booking.id}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    bgcolor: alpha(palette.purpleDeep, 0.03),
+                    border: `1px solid ${alpha(palette.purpleDeep, 0.08)}`,
+                  }}
+                >
+                  <Typography variant="body2" fontWeight={700}>
+                    {new Date(booking.startTime).toLocaleString(undefined, {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {booking.services.map((x) => x.service.name).join(', ')} · {booking.status}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No booking history yet.
+            </Typography>
+          )}
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box>
