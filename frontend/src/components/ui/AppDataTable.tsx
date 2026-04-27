@@ -60,6 +60,7 @@ export type AppDataTableProps<Row extends { id: string | number }> = {
   searchPlaceholder?: string;
   searchQuery?: string;
   onSearch?: (query: string) => void;
+  clientSearch?: boolean;
   onRefresh?: () => void;
   selectable?: boolean;
   onDeleteSelected?: (selectedIds: Array<string | number>) => void;
@@ -91,6 +92,7 @@ export function AppDataTable<Row extends { id: string | number }>({
   searchPlaceholder = 'Search...',
   searchQuery: controlledSearchQuery,
   onSearch,
+  clientSearch = true,
   onRefresh,
   selectable = false,
   onDeleteSelected,
@@ -150,6 +152,7 @@ export function AppDataTable<Row extends { id: string | number }>({
   };
 
   const filteredRows = useMemo(() => {
+    if (!clientSearch) return rows;
     const q = searchQuery.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((row) =>
@@ -164,7 +167,7 @@ export function AppDataTable<Row extends { id: string | number }>({
         return false;
       }),
     );
-  }, [rows, searchQuery, columns]);
+  }, [rows, searchQuery, columns, clientSearch]);
 
   const totalCount = total ?? filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));

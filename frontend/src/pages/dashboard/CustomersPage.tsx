@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Box, Button, Pagination, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Pagination, Stack, Typography } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -148,24 +148,17 @@ export default function CustomersPage() {
         </Alert>
       ) : null}
 
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
-        <TextField
-          label="Search customers"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Name, phone, email"
-          fullWidth
-          InputLabelProps={{ shrink: true }}
-        />
-      </Stack>
-
       <AppDataTable
         columns={columns}
         rows={rows}
         showActions={false}
+        searchPlaceholder="Name, phone, email"
+        searchQuery={search}
+        onSearch={(q) => {
+          setSearch(q);
+          setPage(1);
+        }}
+        clientSearch={false}
         toolbar={
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
