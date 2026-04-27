@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingSource, BookingStatus, Prisma } from '@prisma/client';
+import { BookingSource, BookingStatus, CustomerAccountStatus, Prisma } from '@prisma/client';
 
 import type { RequestUser } from '../auth/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,8 +38,16 @@ export class BookingsService {
     }
     const existing = await this.prisma.customer.findFirst({
       where: { salonId, phone },
+      select: { id: true, accountStatus: true },
     });
-    if (existing) return existing.id;
+    if (existing) {
+      if (existing.accountStatus !== CustomerAccountStatus.ACTIVE) {
+        throw new ForbiddenException(
+          'Your salon customer profile is blocked or inactive. Contact the salon.',
+        );
+      }
+      return existing.id;
+    }
     return (
       await this.prisma.customer.create({
         data: {
@@ -177,9 +185,13 @@ export class BookingsService {
 
     const customer = await this.prisma.customer.findFirst({
       where: { id: customerId, salonId },
+      select: { id: true, accountStatus: true },
     });
     if (!customer) {
       throw new BadRequestException('Customer not found for this salon.');
+    }
+    if (customer.accountStatus !== CustomerAccountStatus.ACTIVE) {
+      throw new BadRequestException('This customer is blocked or inactive and cannot be booked.');
     }
 
     if (dto.staffId) {

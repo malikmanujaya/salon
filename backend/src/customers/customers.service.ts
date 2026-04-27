@@ -1,13 +1,46 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import { BookingStatus, Prisma } from '@prisma/client';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { BookingStatus, CustomerAccountStatus, Prisma } from '@prisma/client';
 
 import type { RequestUser } from '../auth/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 @Injectable()
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private assertCanManageCustomers(actor: RequestUser) {
+    if (actor.role !== 'SUPER_ADMIN' && actor.role !== 'SALON_OWNER') {
+      throw new ForbiddenException('Only super admin or salon owner can manage customers.');
+    }
+  }
+
+  private customerSelect = {
+    id: true,
+    fullName: true,
+    phone: true,
+    email: true,
+    accountStatus: true,
+    createdAt: true,
+    salon: { select: { id: true, name: true, slug: true } },
+  } satisfies Prisma.CustomerSelect;
+
+  private async getCustomerOrThrow(salonId: string, id: string) {
+    const row = await this.prisma.customer.findFirst({
+      where: { id, salonId },
+      select: this.customerSelect,
+    });
+    if (!row) {
+      throw new NotFoundException('Customer not found.');
+    }
+    return row;
+  }
 
   listSalonOptions() {
     return this.prisma.salon.findMany({
@@ -91,6 +124,7 @@ export class CustomersService {
     user: RequestUser,
     page = 1,
     pageSize = 20,
+    includeInactive = false,
   ) {
     if (user.role === 'CUSTOMER') {
       const phone = user.phone?.trim();
@@ -98,17 +132,10 @@ export class CustomersService {
         return { items: [], total: 0, page: 1, pageSize: 5 };
       }
       const items = await this.prisma.customer.findMany({
-        where: { salonId, phone },
+        where: { salonId, phone, accountStatus: CustomerAccountStatus.ACTIVE },
         orderBy: { fullName: 'asc' },
         take: 5,
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-          email: true,
-          createdAt: true,
-          salon: { select: { id: true, name: true, slug: true } },
-        },
+        select: this.customerSelect,
       });
       return { items, total: items.length, page: 1, pageSize: 5 };
     }
@@ -116,6 +143,7 @@ export class CustomersService {
     const search = q?.trim();
     const where: Prisma.CustomerWhereInput = {
       salonId,
+      ...(!includeInactive ? { accountStatus: { not: CustomerAccountStatus.DEACTIVATED } } : {}),
       ...(search
         ? {
             OR: [
@@ -135,14 +163,7 @@ export class CustomersService {
         orderBy: { createdAt: 'desc' },
         skip: (safePage - 1) * safePageSize,
         take: safePageSize,
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-          email: true,
-          createdAt: true,
-          salon: { select: { id: true, name: true, slug: true } },
-        },
+        select: this.customerSelect,
       }),
     ]);
     return { items, total, page: safePage, pageSize: safePageSize };
@@ -160,14 +181,7 @@ export class CustomersService {
           gender: dto.gender ?? null,
           notes: dto.notes?.trim() || null,
         },
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-          email: true,
-          createdAt: true,
-          salon: { select: { id: true, name: true, slug: true } },
-        },
+        select: this.customerSelect,
       });
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
@@ -175,5 +189,46 @@ export class CustomersService {
       }
       throw e;
     }
+  }
+
+  async update(salonId: string, id: string, dto: UpdateCustomerDto, actor: RequestUser) {
+    this.assertCanManageCustomers(actor);
+    await this.getCustomerOrThrow(salonId, id);
+
+    const data: Prisma.CustomerUpdateInput = {};
+    if (dto.fullName !== undefined) data.fullName = dto.fullName.trim();
+    if (dto.phone !== undefined) data.phone = dto.phone.trim();
+    if (dto.email !== undefined) data.email = dto.email?.trim() ? dto.email.trim() : null;
+    if (dto.gender !== undefined) data.gender = dto.gender;
+    if (dto.notes !== undefined) data.notes = dto.notes?.trim() ? dto.notes.trim() : null;
+    if (dto.accountStatus !== undefined) data.accountStatus = dto.accountStatus;
+
+    if (Object.keys(data).length === 0) {
+      return this.getCustomerOrThrow(salonId, id);
+    }
+
+    try {
+      return await this.prisma.customer.update({
+        where: { id },
+        data,
+        select: this.customerSelect,
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        throw new ConflictException('A customer with this phone number already exists.');
+      }
+      throw e;
+    }
+  }
+
+  /** Soft-remove from active CRM (keeps history). */
+  async deactivate(salonId: string, id: string, actor: RequestUser) {
+    this.assertCanManageCustomers(actor);
+    await this.getCustomerOrThrow(salonId, id);
+    return this.prisma.customer.update({
+      where: { id },
+      data: { accountStatus: CustomerAccountStatus.DEACTIVATED },
+      select: this.customerSelect,
+    });
   }
 }

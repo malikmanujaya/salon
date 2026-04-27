@@ -1,4 +1,15 @@
-import { Body, Controller, ForbiddenException, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser, type RequestUser } from '../auth/decorators/current-user.decorator';
@@ -7,6 +18,7 @@ import { requireSalonId } from '../common/require-salon';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { QueryCustomersDto } from './dto/query-customers.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 @ApiTags('customers')
 @Controller('customers')
@@ -39,7 +51,34 @@ export class CustomersController {
       user.role === 'SUPER_ADMIN'
         ? CustomersController.SUPER_ADMIN_SALON_ID
         : requireSalonId(user);
-    return this.customers.list(salonId, query.q, user, query.page, query.pageSize);
+    return this.customers.list(
+      salonId,
+      query.q,
+      user,
+      query.page,
+      query.pageSize,
+      query.includeInactive,
+    );
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update customer (super admin / salon owner)' })
+  update(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: UpdateCustomerDto) {
+    const salonId =
+      user.role === 'SUPER_ADMIN'
+        ? CustomersController.SUPER_ADMIN_SALON_ID
+        : requireSalonId(user);
+    return this.customers.update(salonId, id, dto, user);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Deactivate customer CRM record (soft delete)' })
+  remove(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    const salonId =
+      user.role === 'SUPER_ADMIN'
+        ? CustomersController.SUPER_ADMIN_SALON_ID
+        : requireSalonId(user);
+    return this.customers.deactivate(salonId, id, user);
   }
 
   @Post()

@@ -30,7 +30,10 @@ export class UpdateStaffMemberDto {
   @MaxLength(120)
   title?: string;
 
-  @ApiPropertyOptional({ enum: UserStatus, description: 'Only ACTIVE or DISABLED is supported.' })
+  @ApiPropertyOptional({
+    enum: UserStatus,
+    description: 'ACTIVE = normal, SUSPENDED = temporarily blocked (cannot sign in), DISABLED = deactivated.',
+  })
   @IsOptional()
   @IsEnum(UserStatus)
   status?: UserStatus;

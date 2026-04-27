@@ -35,11 +35,14 @@ export type BookingDetail = {
   services: BookingServiceLine[];
 };
 
+export type CustomerAccountStatus = 'ACTIVE' | 'BLOCKED' | 'DEACTIVATED';
+
 export type CustomerSummary = {
   id: string;
   fullName: string;
   phone: string;
   email: string | null;
+  accountStatus: CustomerAccountStatus;
   createdAt: string;
   salon?: { id: string; name: string; slug: string };
 };

@@ -14,7 +14,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
-import type { CreateSalonStaffRole, SalonStaffMember } from '@/types/staff';
+import type { CreateSalonStaffRole, SalonStaffMember, StaffUserStatus } from '@/types/staff';
 
 const ROLE_OPTIONS: { value: CreateSalonStaffRole; label: string }[] = [
   { value: 'SALON_OWNER', label: 'Admin (salon owner)' },
@@ -50,6 +50,31 @@ function roleChipColor(
   }
 }
 
+const STAFF_USER_STATUS_OPTIONS: { value: StaffUserStatus; label: string }[] = [
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'SUSPENDED', label: 'Temporarily blocked (cannot sign in)' },
+  { value: 'DISABLED', label: 'Deactivated' },
+];
+
+function staffStatusLabel(s: string) {
+  return STAFF_USER_STATUS_OPTIONS.find((o) => o.value === s)?.label ?? s;
+}
+
+function staffStatusChipColor(
+  s: string,
+): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' {
+  switch (s) {
+    case 'ACTIVE':
+      return 'success';
+    case 'SUSPENDED':
+      return 'warning';
+    case 'DISABLED':
+      return 'default';
+    default:
+      return 'default';
+  }
+}
+
 export default function StaffPage() {
   const { user, loading: authLoading } = useAuth();
   const qc = useQueryClient();
@@ -71,6 +96,7 @@ export default function StaffPage() {
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<CreateSalonStaffRole>('STAFF');
   const [title, setTitle] = useState('');
+  const [accountStatus, setAccountStatus] = useState<StaffUserStatus>('ACTIVE');
 
   const membersQuery = useQuery({
     queryKey: ['staff-members', search],
@@ -118,8 +144,15 @@ export default function StaffPage() {
     {
       id: 'status',
       label: 'Status',
-      minWidth: 100,
-      render: (m) => <Chip size="small" label={m.status} variant="outlined" />,
+      minWidth: 200,
+      render: (m) => (
+        <Chip
+          size="small"
+          label={staffStatusLabel(m.status)}
+          color={staffStatusChipColor(m.status)}
+          variant="outlined"
+        />
+      ),
     },
   ];
 
@@ -179,6 +212,7 @@ export default function StaffPage() {
     setPhone(member.phone ?? '');
     setRole(member.role as CreateSalonStaffRole);
     setTitle(member.staffProfile?.title ?? '');
+    setAccountStatus((member.status as StaffUserStatus) || 'ACTIVE');
     setActionError(null);
   };
 
@@ -196,6 +230,7 @@ export default function StaffPage() {
         phone: phone.trim() || null,
         role,
         title: role === 'STAFF' ? title.trim() || null : null,
+        status: accountStatus,
       });
       setEditing(null);
       setFullName('');
@@ -346,6 +381,13 @@ export default function StaffPage() {
             placeholder="e.g. Senior stylist"
           />
         ) : null}
+        <LabeledSelect
+          label="Account status"
+          value={accountStatus}
+          onChange={(e) => setAccountStatus(e.target.value as StaffUserStatus)}
+          options={STAFF_USER_STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          required
+        />
       </EditModal>
 
       <DeleteConfirmModal

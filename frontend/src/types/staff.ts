@@ -1,10 +1,13 @@
+/** User account status from API (sign-in / lifecycle). */
+export type StaffUserStatus = 'ACTIVE' | 'SUSPENDED' | 'DISABLED';
+
 export type SalonStaffMember = {
   id: string;
   email: string;
   fullName: string;
   phone: string | null;
   role: string;
-  status: string;
+  status: StaffUserStatus | string;
   createdAt: string;
   staffProfile: {
     id: string;

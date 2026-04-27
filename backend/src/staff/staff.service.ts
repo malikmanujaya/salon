@@ -283,32 +283,39 @@ export class StaffDirectoryService {
     const nextRole = dto.role ?? (existing.role as CreateSalonStaffRole);
     this.assertCanMutateMember(actor, nextRole);
 
-    if (dto.status && !['ACTIVE', 'DISABLED'].includes(dto.status)) {
-      throw new ForbiddenException('Only ACTIVE or DISABLED status can be set.');
+    if (dto.status && !['ACTIVE', 'DISABLED', 'SUSPENDED'].includes(dto.status)) {
+      throw new ForbiddenException('Only ACTIVE, SUSPENDED, or DISABLED account status can be set.');
     }
+
+    const nextStaffStatusFromUser =
+      dto.status === undefined
+        ? undefined
+        : dto.status === UserStatus.DISABLED
+          ? StaffStatus.INACTIVE
+          : dto.status === UserStatus.SUSPENDED
+            ? StaffStatus.ON_LEAVE
+            : StaffStatus.ACTIVE;
 
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: memberId },
         data: {
           fullName: dto.fullName?.trim() || undefined,
-          phone: dto.phone !== undefined ? dto.phone.trim() || null : undefined,
+          phone: dto.phone === undefined ? undefined : dto.phone?.trim() || null,
           role: dto.role,
           status: dto.status,
         },
       });
 
       const shouldHaveStaffProfile = nextRole === CreateSalonStaffRole.STAFF;
-      const nextStaffStatus =
-        dto.status === UserStatus.DISABLED ? StaffStatus.INACTIVE : StaffStatus.ACTIVE;
 
       if (shouldHaveStaffProfile) {
         if (existing.staffProfile?.id) {
           await tx.staffProfile.update({
             where: { id: existing.staffProfile.id },
             data: {
-              title: dto.title !== undefined ? dto.title.trim() || null : undefined,
-              status: nextStaffStatus,
+              title: dto.title === undefined ? undefined : dto.title?.trim() || null,
+              ...(nextStaffStatusFromUser !== undefined ? { status: nextStaffStatusFromUser } : {}),
             },
           });
         } else {
@@ -317,7 +324,7 @@ export class StaffDirectoryService {
               userId: memberId,
               salonId,
               title: dto.title?.trim() || null,
-              status: nextStaffStatus,
+              status: nextStaffStatusFromUser ?? StaffStatus.ACTIVE,
             },
           });
         }

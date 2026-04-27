@@ -33,6 +33,7 @@ enum UserStatus {
   ACTIVE
   INVITED
   DISABLED
+  SUSPENDED
 }
 
 model User {
@@ -198,6 +199,12 @@ enum Gender {
   PREFER_NOT_TO_SAY
 }
 
+enum CustomerAccountStatus {
+  ACTIVE
+  BLOCKED
+  DEACTIVATED
+}
+
 model Customer {
   id        String     @id @default(cuid())
   salonId   String
@@ -209,6 +216,7 @@ model Customer {
   gender    Gender?
   birthday  DateTime?
   notes     String?    @db.Text
+  accountStatus CustomerAccountStatus @default(ACTIVE)
 
   bookings  Booking[]
 
