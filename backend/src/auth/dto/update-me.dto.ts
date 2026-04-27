@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateMeDto {
   @ApiPropertyOptional()
@@ -18,14 +18,13 @@ export class UpdateMeDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @MinLength(5)
-  @MaxLength(32)
+  @Matches(/^\d{10}$/, { message: 'phone must be exactly 10 digits' })
   phone?: string;
 
   @ApiPropertyOptional({ description: 'Avatar image URL or data URI' })
   @IsOptional()
   @IsString()
-  @MaxLength(2_000_000)
+  @MaxLength(7_100_000)
   avatarUrl?: string;
 }
 

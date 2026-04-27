@@ -37,9 +37,9 @@ export default function ProfilePage() {
       setError('Please choose an image file.');
       return;
     }
-    const maxBytes = 2 * 1024 * 1024;
+    const maxBytes = 5 * 1024 * 1024;
     if (file.size > maxBytes) {
-      setError('Image must be 2MB or smaller.');
+      setError('Image must be 5MB or smaller.');
       return;
     }
     setError(null);
@@ -63,13 +63,17 @@ export default function ProfilePage() {
       setError('Email is required.');
       return;
     }
+    if (phone.trim() && !/^\d{10}$/.test(phone.trim())) {
+      setError('Phone number must be exactly 10 digits.');
+      return;
+    }
 
     setSaving(true);
     try {
       await api.patch<AuthUser>('/auth/me', {
         fullName: fullName.trim(),
         email: email.trim(),
-        phone: phone.trim(),
+        phone: phone.trim() || undefined,
         avatarUrl: avatarUrl ?? '',
       });
       await refreshProfile();
@@ -144,7 +148,7 @@ export default function ProfilePage() {
                 Profile photo
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
-                Upload a square image (JPG/PNG/WebP), max 2MB.
+                Upload a square image (JPG/PNG/WebP), max 5MB.
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Button
@@ -178,7 +182,11 @@ export default function ProfilePage() {
 
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
             <LabeledTextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-            <LabeledTextField label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <LabeledTextField
+              label="Phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+            />
           </Stack>
           <LabeledTextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required type="email" />
 

@@ -236,6 +236,9 @@ export class AuthService {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
         throw new ConflictException('Another account already uses this email.');
       }
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2000') {
+        throw new BadRequestException('Avatar image is too large for storage. Try a smaller file.');
+      }
       throw e;
     }
 

@@ -39,7 +39,7 @@ model User {
   id            String      @id @default(cuid())
   email         String      @unique
   phone         String?
-  avatarUrl     String?     @db.Text
+  avatarUrl     String?     @db.LongText
   passwordHash  String
   fullName      String
   role          UserRole    @default(RECEPTIONIST)
