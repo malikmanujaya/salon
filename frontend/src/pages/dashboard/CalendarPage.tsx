@@ -22,9 +22,12 @@ import type {
 type CustomersResponse = CustomerSummary[] | { items?: CustomerSummary[] };
 
 export default function CalendarPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const qc = useQueryClient();
-  const salonId = user?.salonId;
+  const canUseCalendar =
+    !authLoading &&
+    user?.role !== undefined &&
+    user?.role !== 'STAFF';
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogNonce, setDialogNonce] = useState(0);
@@ -52,7 +55,7 @@ export default function CalendarPage() {
       });
       return data;
     },
-    enabled: Boolean(salonId),
+    enabled: canUseCalendar,
   });
 
   const customersQuery = useQuery({
@@ -61,7 +64,7 @@ export default function CalendarPage() {
       const { data } = await api.get<CustomersResponse>('/customers');
       return Array.isArray(data) ? data : data.items ?? [];
     },
-    enabled: Boolean(salonId),
+    enabled: canUseCalendar && user?.role !== 'CUSTOMER',
   });
 
   const servicesQuery = useQuery({
@@ -70,7 +73,7 @@ export default function CalendarPage() {
       const { data } = await api.get<SalonServiceSummary[]>('/salon-services');
       return data;
     },
-    enabled: Boolean(salonId),
+    enabled: canUseCalendar,
   });
 
   const staffQuery = useQuery({
@@ -79,7 +82,7 @@ export default function CalendarPage() {
       const { data } = await api.get<StaffSummary[]>('/staff');
       return data;
     },
-    enabled: Boolean(salonId),
+    enabled: canUseCalendar,
   });
 
   const invalidateBookings = () => void qc.invalidateQueries({ queryKey: ['bookings'] });
@@ -101,13 +104,21 @@ export default function CalendarPage() {
   const catalogLoading =
     customersQuery.isLoading || servicesQuery.isLoading || staffQuery.isLoading;
 
-  if (!salonId) {
+  if (authLoading) {
+    return (
+      <Box>
+        <PageHeader title="Calendar" description={`Week view of appointments at ${SALON_DISPLAY_NAME}.`} />
+      </Box>
+    );
+  }
+
+  if (!canUseCalendar) {
     return (
       <Box>
         <PageHeader title="Calendar" description={`Week view of appointments at ${SALON_DISPLAY_NAME}.`} />
         <EmptyState
-          title="No salon linked"
-          description="Sign in with a salon account to use the calendar."
+          title="Not available"
+          description="This role does not have access to calendar management."
         />
       </Box>
     );

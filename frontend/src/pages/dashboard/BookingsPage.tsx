@@ -24,10 +24,13 @@ import type {
 type CustomersResponse = CustomerSummary[] | { items?: CustomerSummary[] };
 
 export default function BookingsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isCustomer = user?.role === 'CUSTOMER';
   const qc = useQueryClient();
-  const salonId = user?.salonId;
+  const canUseBookings =
+    !authLoading &&
+    user?.role !== undefined &&
+    user?.role !== 'STAFF';
 
   const [from, setFrom] = useState<Dayjs | null>(() => dayjs().subtract(14, 'day').startOf('day'));
   const [to, setTo] = useState<Dayjs | null>(() => dayjs().endOf('day'));
@@ -52,7 +55,7 @@ export default function BookingsPage() {
       const { data } = await api.get<BookingDetail[]>('/bookings', { params: { from: fromIso, to: toIso } });
       return data;
     },
-    enabled: Boolean(salonId) && Boolean(fromIso) && Boolean(toIso) && !rangeError,
+    enabled: canUseBookings && Boolean(fromIso) && Boolean(toIso) && !rangeError,
   });
 
   const customersQuery = useQuery({
@@ -61,7 +64,7 @@ export default function BookingsPage() {
       const { data } = await api.get<CustomersResponse>('/customers');
       return Array.isArray(data) ? data : data.items ?? [];
     },
-    enabled: Boolean(salonId),
+    enabled: canUseBookings && !isCustomer,
   });
 
   const servicesQuery = useQuery({
@@ -70,7 +73,7 @@ export default function BookingsPage() {
       const { data } = await api.get<SalonServiceSummary[]>('/salon-services');
       return data;
     },
-    enabled: Boolean(salonId),
+    enabled: canUseBookings,
   });
 
   const staffQuery = useQuery({
@@ -79,7 +82,7 @@ export default function BookingsPage() {
       const { data } = await api.get<StaffSummary[]>('/staff');
       return data;
     },
-    enabled: Boolean(salonId),
+    enabled: canUseBookings,
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -139,13 +142,21 @@ export default function BookingsPage() {
     },
   ];
 
-  if (!salonId) {
+  if (authLoading) {
     return (
       <Box>
-        <PageHeader title="Bookings" description="Sign in with a salon account to manage appointments." />
+        <PageHeader title="Bookings" description="Loading booking workspace..." />
+      </Box>
+    );
+  }
+
+  if (!canUseBookings) {
+    return (
+      <Box>
+        <PageHeader title="Bookings" description="Booking workspace access" />
         <EmptyState
-          title="No salon linked"
-          description="Platform admin accounts are not tied to a salon. Use an owner or staff login to view bookings."
+          title="Not available"
+          description="This role does not have access to all-bookings management."
         />
       </Box>
     );
