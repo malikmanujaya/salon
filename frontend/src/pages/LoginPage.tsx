@@ -97,7 +97,7 @@ export default function LoginPage() {
             variant="overline"
             sx={{ color: alpha(palette.ivory, 0.75), letterSpacing: '0.2em', fontWeight: 700 }}
           >
-            Lumora
+            eBeauty.LK
           </Typography>
           <Typography
             variant="h3"
