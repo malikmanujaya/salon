@@ -518,10 +518,10 @@ export default function DashboardLayout() {
               <ListItemIcon sx={{ minWidth: 30, justifyContent: 'center', color: 'inherit' }}>
                 <LogoutRoundedIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText
+              {/* <ListItemText
                 primary="Sign out"
                 primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap' }}
-              />
+              /> */}
             </ListItemButton>
           </Box>
         </Box>
