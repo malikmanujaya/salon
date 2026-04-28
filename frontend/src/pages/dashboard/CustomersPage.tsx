@@ -1,15 +1,5 @@
 import { useState } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  FormControlLabel,
-  Pagination,
-  Stack,
-  Switch,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Button, Chip, FormControlLabel, Stack, Switch } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -27,7 +17,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import type { CustomerAccountStatus, CustomerSummary } from '@/types/booking';
 
 const SUPER_ADMIN_SALON_ID = 'cmofwb8i70001jbrc1f7zigpf';
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 10;
 
 type CustomersPageResponse = { items: CustomerSummary[]; total: number; page: number; pageSize: number };
 
@@ -65,6 +55,7 @@ export default function CustomersPage() {
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [includeInactive, setIncludeInactive] = useState(false);
   const [openCreate, setOpenCreate] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -87,13 +78,13 @@ export default function CustomersPage() {
   const effectiveSalonId = isSuperAdmin ? SUPER_ADMIN_SALON_ID : salonId;
 
   const customersQuery = useQuery({
-    queryKey: ['customers', effectiveSalonId, search, page, includeInactive],
+    queryKey: ['customers', effectiveSalonId, search, page, pageSize, includeInactive],
     queryFn: async () => {
       const { data } = await api.get<CustomersPageResponse>('/customers', {
         params: {
           q: search.trim() || undefined,
           page,
-          pageSize: PAGE_SIZE,
+          pageSize,
           ...(includeInactive ? { includeInactive: true } : {}),
         },
       });
@@ -104,7 +95,6 @@ export default function CustomersPage() {
 
   const rows = customersQuery.data?.items ?? [];
   const total = customersQuery.data?.total ?? 0;
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const columns: AppTableColumn<CustomerSummary>[] = [
     { id: 'fullName', label: 'Name', minWidth: 180 },
@@ -269,6 +259,15 @@ export default function CustomersPage() {
       <AppDataTable
         columns={columns}
         rows={rows}
+        loading={customersQuery.isLoading}
+        total={total}
+        page={page}
+        onPageChange={setPage}
+        defaultRowsPerPage={DEFAULT_PAGE_SIZE}
+        onRowsPerPageChange={(next) => {
+          setPageSize(next);
+          setPage(1);
+        }}
         showActions={canManage}
         onEdit={canManage ? openEdit : undefined}
         onDelete={canManage ? (row) => setDeleteTarget(row) : undefined}
@@ -280,41 +279,25 @@ export default function CustomersPage() {
         }}
         clientSearch={false}
         toolbar={
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            alignItems={{ sm: 'center' }}
-            justifyContent="space-between"
-            sx={{ width: '100%' }}
-            spacing={1.5}
-          >
-            <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap">
-              <Typography variant="body2" color="text.secondary">
-                {total} customer{total === 1 ? '' : 's'} total
-              </Typography>
-              {canManage ? (
-                <FormControlLabel
-                  control={
-                    <Switch
-                      size="small"
-                      checked={includeInactive}
-                      onChange={(_e, checked) => {
-                        setIncludeInactive(checked);
-                        setPage(1);
-                      }}
-                    />
-                  }
-                  label="Show inactive"
-                />
-              ) : null}
-            </Stack>
-            <Pagination
-              count={pageCount}
-              page={page}
-              onChange={(_e, p) => setPage(p)}
-              color="primary"
-              shape="rounded"
-              size="small"
-            />
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <Box sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+              {total} customer{total === 1 ? '' : 's'}
+            </Box>
+            {canManage ? (
+              <FormControlLabel
+                control={
+                  <Switch
+                    size="small"
+                    checked={includeInactive}
+                    onChange={(_e, checked) => {
+                      setIncludeInactive(checked);
+                      setPage(1);
+                    }}
+                  />
+                }
+                label="Show inactive"
+              />
+            ) : null}
           </Stack>
         }
         emptyTitle="No customers found"
