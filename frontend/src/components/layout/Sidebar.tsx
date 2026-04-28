@@ -1,0 +1,8 @@
+/**
+ * Sidebar is currently implemented inside DashboardLayout.
+ * Keep this component as an extraction target for future cleanup.
+ */
+export function Sidebar() {
+  return null;
+}
+

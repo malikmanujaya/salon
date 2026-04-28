@@ -153,7 +153,7 @@ export function BrandLogo({ variant }: BrandLogoProps) {
 }
 
 export type BrandLogoNavLinkProps = {
-  /** Router path (marketing home `/` or app shell `/dashboard`). */
+  /** Router path (marketing home `/` or app shell `/overview`). */
   to?: string;
   onClick?: () => void;
   /** Tighter mark for dense headers (e.g. mobile dashboard bar). */

@@ -189,6 +189,7 @@ export default function ProfilePage() {
             />
           </Stack>
           <LabeledTextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required type="email" />
+          <LabeledTextField label="Role" value={user?.role ?? '—'} disabled />
 
           <Box sx={{ pt: 0.5, display: 'flex', justifyContent: 'flex-start' }}>
             <Button
@@ -202,10 +203,6 @@ export default function ProfilePage() {
           </Box>
         </Stack>
       </Paper>
-
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
-        Role: {user?.role ?? '—'}
-      </Typography>
     </Box>
   );
 }

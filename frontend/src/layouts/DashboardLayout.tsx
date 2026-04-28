@@ -60,6 +60,23 @@ type NavLinkItem = {
 
 type NavEntry = NavLinkItem | NavGroup;
 
+function roleLabel(role?: string) {
+  switch (role) {
+    case 'SUPER_ADMIN':
+      return 'Super Admin';
+    case 'SALON_OWNER':
+      return 'Salon Admin';
+    case 'RECEPTIONIST':
+      return 'Receptionist';
+    case 'STAFF':
+      return 'Staff';
+    case 'CUSTOMER':
+      return 'Customer';
+    default:
+      return role ?? 'User';
+  }
+}
+
 const NAV: NavEntry[] = [
   { type: 'link', to: '/overview', label: 'Overview', icon: DashboardRoundedIcon, end: true },
   {
@@ -484,7 +501,7 @@ export default function DashboardLayout() {
                 {user?.fullName}
               </Typography>
               <Typography variant="caption" color="text.secondary" noWrap display="block">
-                {user?.email}
+                {roleLabel(user?.role)}
               </Typography>
             </Box>
             <ListItemButton

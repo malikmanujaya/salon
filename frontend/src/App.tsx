@@ -4,17 +4,18 @@ import { Box } from '@mui/material';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import MarketingLayout from './layouts/MarketingLayout';
 import AuthLayout from './layouts/AuthLayout';
-import DashboardLayout from './layouts/DashboardLayout';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import DashboardHomePage from './features/dashboard/pages/DashboardHomePage';
-import BookingsPage from './features/bookings/pages/BookingsPage';
-import CalendarPage from './features/bookings/pages/CalendarPage';
-import CustomersPage from './features/customers/pages/CustomersPage';
-import StaffPage from './features/staff/pages/StaffPage';
-import ServicesPage from './features/services/pages/ServicesPage';
-import ProfilePage from './features/profile/pages/ProfilePage';
+import AppLayout from './app/layout';
+import HomePage from './app/page';
+import LoginPage from './app/login/page';
+import SignupPage from './app/signup/page';
+import DashboardHomePage from './app/overview/page';
+import BookingsPage from './app/bookings/page';
+import NewBookingPage from './app/bookings/new/page';
+import CalendarPage from './app/calendar/page';
+import CustomersPage from './app/customers/page';
+import StaffPage from './app/staff/page';
+import ServicesPage from './app/services/page';
+import ProfilePage from './app/settings/profile/page';
 
 export default function App() {
   return (
@@ -35,9 +36,10 @@ export default function App() {
           <Route path="/signup" element={<SignupPage />} />
         </Route>
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<DashboardLayout />}>
+          <Route path="/" element={<AppLayout />}>
             <Route path="overview" element={<DashboardHomePage />} />
             <Route path="bookings" element={<BookingsPage />} />
+            <Route path="bookings/new" element={<NewBookingPage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="customers" element={<CustomersPage />} />
             <Route path="staff" element={<StaffPage />} />

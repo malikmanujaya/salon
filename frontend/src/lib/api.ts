@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 import type { AuthTokensResponse } from '../types/user';
+import { env } from './env';
 import {
   clearTokens,
   getAccessToken,
@@ -9,8 +10,7 @@ import {
   setTokens,
 } from './authStorage';
 
-const baseURL =
-  import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? 'http://localhost:4000/api';
+const baseURL = env.apiUrl;
 
 export const api = axios.create({
   baseURL,
