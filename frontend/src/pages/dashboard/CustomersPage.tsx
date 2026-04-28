@@ -123,12 +123,12 @@ export default function CustomersPage() {
         />
       ),
     },
-    {
-      id: 'salon',
-      label: 'Salon',
-      minWidth: 160,
-      render: (c) => c.salon?.name ?? '—',
-    },
+    // {
+    //   id: 'salon',
+    //   label: 'Salon',
+    //   minWidth: 160,
+    //   render: (c) => c.salon?.name ?? '—',
+    // },
     {
       id: 'createdAt',
       label: 'Created',
@@ -237,7 +237,7 @@ export default function CustomersPage() {
         title="Customers"
         description={
           isSuperAdmin
-            ? `Showing customers for salon ${SUPER_ADMIN_SALON_ID}.`
+            ? `Showing customers for salon.`
             : 'Manage your salon customer records.'
         }
         actions={

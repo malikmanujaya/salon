@@ -13,6 +13,7 @@ import { BookingStatus, Prisma } from '@prisma/client';
 
 import type { AppConfig } from '../config/configuration';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertUserMayAuthenticate } from './assert-user-may-authenticate';
 import type { RequestUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -156,12 +157,16 @@ export class AuthService {
         role: true,
         passwordHash: true,
         status: true,
+        salonId: true,
+        phone: true,
       },
     });
 
-    if (!user || user.status !== 'ACTIVE') {
+    if (!user) {
       throw new UnauthorizedException('Invalid email or password.');
     }
+
+    await assertUserMayAuthenticate(this.prisma, user);
 
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) {
@@ -195,6 +200,12 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token.');
     }
+
+    const sessionUser = await this.prisma.user.findUnique({
+      where: { id: sub },
+      select: { role: true, status: true, salonId: true, phone: true },
+    });
+    await assertUserMayAuthenticate(this.prisma, sessionUser);
 
     const publicUser = await this.buildPublicUser(sub);
     return {

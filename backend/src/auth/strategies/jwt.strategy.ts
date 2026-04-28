@@ -5,6 +5,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import type { AppConfig } from '../../config/configuration';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertUserMayAuthenticate } from '../assert-user-may-authenticate';
 import type { RequestUser } from '../decorators/current-user.decorator';
 
 type AccessPayload = {
@@ -51,9 +52,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       },
     });
 
-    if (!user || user.status !== 'ACTIVE') {
+    if (!user) {
       throw new UnauthorizedException();
     }
+
+    await assertUserMayAuthenticate(this.prisma, user);
 
     return {
       id: user.id,
