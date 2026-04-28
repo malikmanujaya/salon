@@ -31,15 +31,15 @@ const imgSx: Record<BrandLogoVariant, object> = {
     objectPosition: 'left center',
   },
   'sidebar-expanded': {
-    maxHeight: 52,
+    maxHeight: 88,
     width: '100%',
     maxWidth: '100%',
     objectFit: 'contain',
     objectPosition: 'center',
   },
   'sidebar-collapsed': {
-    width: 44,
-    height: 44,
+    width: 56,
+    height: 56,
     objectFit: 'contain',
     objectPosition: 'center',
     borderRadius: 2,
@@ -113,8 +113,8 @@ export function BrandLogo({ variant }: BrandLogoProps) {
     return (
       <Box
         sx={{
-          width: 44,
-          height: 44,
+          width: 56,
+          height: 56,
           borderRadius: 2,
           background: gradients.roseOrchidPurple,
           display: 'grid',

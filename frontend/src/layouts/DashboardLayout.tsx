@@ -34,7 +34,6 @@ import type { SvgIconComponent } from '@mui/icons-material';
 
 import { useAuth } from '../context/AuthContext';
 import { BrandLogo, BrandLogoNavLink } from '@/components/brand/BrandLogo';
-import { SALON_DISPLAY_NAME } from '@/constants/display';
 import { palette } from '@/theme/palette';
 
 const STORAGE_KEY = 'lumora_sidebar_collapsed';
@@ -337,7 +336,7 @@ export default function DashboardLayout() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: collapsed && mdUp ? 'center' : 'stretch',
-          minHeight: collapsed && mdUp ? 88 : 96,
+          minHeight: collapsed && mdUp ? 88 : 108,
           justifyContent: 'center',
         }}
       >
@@ -361,40 +360,9 @@ export default function DashboardLayout() {
               </Box>
             </Tooltip>
           ) : (
-            <>
-              <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                <BrandLogo variant="sidebar-expanded" />
-              </Box>
-              <Box
-                sx={{
-                  mt: 1.1,
-                  px: 1.25,
-                  py: 0.6,
-                  borderRadius: 999,
-                  border: `1px solid ${alpha(palette.purpleDeep, 0.12)}`,
-                  bgcolor: alpha(palette.white, 0.66),
-                  maxWidth: '100%',
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: 'block',
-                    fontWeight: 700,
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    color: alpha(palette.purpleDeep, 0.74),
-                  }}
-                  noWrap
-                >
-                  {user?.role === 'SUPER_ADMIN'
-                    ? 'Platform · all salons'
-                    : user?.role === 'CUSTOMER'
-                      ? SALON_DISPLAY_NAME
-                      : (user?.salon?.name ?? SALON_DISPLAY_NAME)}
-                </Typography>
-              </Box>
-            </>
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <BrandLogo variant="sidebar-expanded" />
+            </Box>
           )}
         </Box>
       </Box>
