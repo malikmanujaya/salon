@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Box, Button, Chip, FormControlLabel, Stack, Switch } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { AppDataTable, type AppTableColumn } from '@/components/ui/AppDataTable';
 import { CreateModal } from '@/components/ui/CreateModal';
@@ -12,14 +12,13 @@ import { LabeledSelect } from '@/components/ui/LabeledSelect';
 import { LabeledTextField } from '@/components/ui/LabeledTextField';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
+import { createCustomer, deactivateCustomer, updateCustomer } from '@/features/customers/api';
+import { customersKeys, useCustomersList } from '@/features/customers/queries';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { CustomerAccountStatus, CustomerSummary } from '@/types/booking';
 
 const SUPER_ADMIN_SALON_ID = 'cmofwb8i70001jbrc1f7zigpf';
 const DEFAULT_PAGE_SIZE = 10;
-
-type CustomersPageResponse = { items: CustomerSummary[]; total: number; page: number; pageSize: number };
 
 const ACCOUNT_STATUS_OPTIONS: { value: CustomerAccountStatus; label: string }[] = [
   { value: 'ACTIVE', label: 'Active' },
@@ -77,21 +76,15 @@ export default function CustomersPage() {
 
   const effectiveSalonId = isSuperAdmin ? SUPER_ADMIN_SALON_ID : salonId;
 
-  const customersQuery = useQuery({
-    queryKey: ['customers', effectiveSalonId, search, page, pageSize, includeInactive],
-    queryFn: async () => {
-      const { data } = await api.get<CustomersPageResponse>('/customers', {
-        params: {
-          q: search.trim() || undefined,
-          page,
-          pageSize,
-          ...(includeInactive ? { includeInactive: true } : {}),
-        },
-      });
-      return data;
+  const customersQuery = useCustomersList(
+    {
+      q: search.trim() || undefined,
+      page,
+      pageSize,
+      ...(includeInactive ? { includeInactive: true } : {}),
     },
-    enabled: Boolean(effectiveSalonId),
-  });
+    Boolean(effectiveSalonId),
+  );
 
   const rows = customersQuery.data?.items ?? [];
   const total = customersQuery.data?.total ?? 0;
@@ -151,7 +144,7 @@ export default function CustomersPage() {
     }
     setCreating(true);
     try {
-      await api.post('/customers', {
+      await createCustomer({
         fullName: newName.trim(),
         phone: newPhone.trim(),
         email: newEmail.trim() || undefined,
@@ -160,7 +153,7 @@ export default function CustomersPage() {
       setNewName('');
       setNewPhone('');
       setNewEmail('');
-      await qc.invalidateQueries({ queryKey: ['customers'] });
+      await qc.invalidateQueries({ queryKey: customersKeys.all });
     } catch (err) {
       setActionError(getApiErrorMessage(err, 'Could not create customer.'));
     } finally {
@@ -191,14 +184,14 @@ export default function CustomersPage() {
     }
     setUpdating(true);
     try {
-      await api.patch(`/customers/${editing.id}`, {
+      await updateCustomer(editing.id, {
         fullName: editName.trim(),
         phone: digits,
         email: editEmail.trim() ? editEmail.trim() : null,
         accountStatus: editAccountStatus,
       });
       setEditing(null);
-      await qc.invalidateQueries({ queryKey: ['customers'] });
+      await qc.invalidateQueries({ queryKey: customersKeys.all });
     } catch (err) {
       setActionError(getApiErrorMessage(err, 'Could not update customer.'));
     } finally {
@@ -211,9 +204,9 @@ export default function CustomersPage() {
     setDeactivating(true);
     setActionError(null);
     try {
-      await api.delete(`/customers/${deleteTarget.id}`);
+      await deactivateCustomer(deleteTarget.id);
       setDeleteTarget(null);
-      await qc.invalidateQueries({ queryKey: ['customers'] });
+      await qc.invalidateQueries({ queryKey: customersKeys.all });
     } catch (err) {
       setActionError(getApiErrorMessage(err, 'Could not deactivate customer.'));
     } finally {

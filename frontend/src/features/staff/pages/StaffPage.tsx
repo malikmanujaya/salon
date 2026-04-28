@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Box, Button, Chip, Stack } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { AppDataTable, type AppTableColumn } from '@/components/ui/AppDataTable';
 import { CreateModal } from '@/components/ui/CreateModal';
@@ -12,7 +12,8 @@ import { LabeledSelect } from '@/components/ui/LabeledSelect';
 import { LabeledTextField } from '@/components/ui/LabeledTextField';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
+import { createStaffMember, deactivateStaffMember, updateStaffMember } from '@/features/staff/api';
+import { staffKeys, useStaffMembersList } from '@/features/staff/queries';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { CreateSalonStaffRole, SalonStaffMember, StaffUserStatus } from '@/types/staff';
 
@@ -98,18 +99,10 @@ export default function StaffPage() {
   const [title, setTitle] = useState('');
   const [accountStatus, setAccountStatus] = useState<StaffUserStatus>('ACTIVE');
 
-  const membersQuery = useQuery({
-    queryKey: ['staff-members', search],
-    queryFn: async () => {
-      const { data } = await api.get<SalonStaffMember[]>('/staff/members', {
-        params: { q: search.trim() || undefined },
-      });
-      return data;
-    },
-    enabled:
-      !authLoading &&
-      user?.role !== 'CUSTOMER',
-  });
+  const membersQuery = useStaffMembersList(
+    { q: search.trim() || undefined },
+    !authLoading && user?.role !== 'CUSTOMER',
+  );
 
   const rows = membersQuery.data ?? [];
 
@@ -182,7 +175,7 @@ export default function StaffPage() {
     }
     setCreating(true);
     try {
-      await api.post('/staff/members', {
+      await createStaffMember({
         fullName: fullName.trim(),
         email: email.trim(),
         password,
@@ -197,7 +190,7 @@ export default function StaffPage() {
       setPhone('');
       setRole('STAFF');
       setTitle('');
-      await qc.invalidateQueries({ queryKey: ['staff-members'] });
+      await qc.invalidateQueries({ queryKey: staffKeys.all });
       await qc.invalidateQueries({ queryKey: ['staff'] });
     } catch (err) {
       setActionError(getApiErrorMessage(err, 'Could not create user.'));
@@ -225,7 +218,7 @@ export default function StaffPage() {
     }
     setUpdating(true);
     try {
-      await api.patch(`/staff/members/${editing.id}`, {
+      await updateStaffMember(editing.id, {
         fullName: fullName.trim(),
         phone: phone.trim() || null,
         role,
@@ -237,7 +230,7 @@ export default function StaffPage() {
       setPhone('');
       setRole('STAFF');
       setTitle('');
-      await qc.invalidateQueries({ queryKey: ['staff-members'] });
+      await qc.invalidateQueries({ queryKey: staffKeys.all });
       await qc.invalidateQueries({ queryKey: ['staff'] });
     } catch (err) {
       setActionError(getApiErrorMessage(err, 'Could not update member.'));
@@ -251,9 +244,9 @@ export default function StaffPage() {
     setDeactivating(true);
     setActionError(null);
     try {
-      await api.delete(`/staff/members/${deactivateTarget.id}`);
+      await deactivateStaffMember(deactivateTarget.id);
       setDeactivateTarget(null);
-      await qc.invalidateQueries({ queryKey: ['staff-members'] });
+      await qc.invalidateQueries({ queryKey: staffKeys.all });
       await qc.invalidateQueries({ queryKey: ['staff'] });
     } catch (err) {
       setActionError(getApiErrorMessage(err, 'Could not deactivate member.'));

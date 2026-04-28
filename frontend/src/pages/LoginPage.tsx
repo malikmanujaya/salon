@@ -29,7 +29,7 @@ import { elevationShadow, gradients, palette } from '@/theme/palette';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
+  const from = (location.state as { from?: string } | null)?.from ?? '/overview';
   const { user, loading: authLoading, login } = useAuth();
 
   const [email, setEmail] = useState('');

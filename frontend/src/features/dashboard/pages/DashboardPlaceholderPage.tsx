@@ -2,31 +2,31 @@ import { useLocation } from 'react-router-dom';
 import { Box, Paper, Typography, alpha } from '@mui/material';
 import ConstructionRoundedIcon from '@mui/icons-material/ConstructionRounded';
 
-import { DashboardModuleDemo } from '../../components/dashboard/DashboardModuleDemo';
+import { DashboardModuleDemo } from '@/components/dashboard/DashboardModuleDemo';
 import { palette } from '@/theme/palette';
 
 const SECTIONS: Record<string, { title: string; body: string }> = {
-  '/dashboard/bookings': {
+  '/bookings': {
     title: 'Bookings',
     body: 'Calendar, drag-reschedule, and walk-ins will live here.',
   },
-  '/dashboard/bookings/calendar': {
+  '/calendar': {
     title: 'Calendar',
     body: 'Week / day views with drag-reschedule and colour-coded staff columns.',
   },
-  '/dashboard/customers': {
+  '/customers': {
     title: 'Customers',
     body: 'Profiles, visit history, and notes tailored for repeat guests.',
   },
-  '/dashboard/staff': {
+  '/staff': {
     title: 'Staff',
     body: 'Schedules, services, and leave — all in one roster.',
   },
-  '/dashboard/services': {
+  '/services': {
     title: 'Services',
     body: 'Service menu, durations, and branch-specific pricing.',
   },
-  '/dashboard/settings/profile': {
+  '/settings/profile': {
     title: 'Profile',
     body: 'Your account, password, and notification preferences.',
   },

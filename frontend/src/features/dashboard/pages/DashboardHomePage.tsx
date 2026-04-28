@@ -10,9 +10,9 @@ import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { DashboardModuleDemo } from '../../components/dashboard/DashboardModuleDemo';
-import { PageHeader } from '../../components/ui';
-import { useAuth } from '../../context/AuthContext';
+import { DashboardModuleDemo } from '@/components/dashboard/DashboardModuleDemo';
+import { PageHeader } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
 import { SALON_DISPLAY_NAME } from '@/constants/display';
 import { api } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -117,7 +117,7 @@ export default function DashboardHomePage() {
           title={`Hello, ${user?.fullName?.split(' ')[0] ?? 'there'}`}
           description={`Your ${SALON_DISPLAY_NAME} booking dashboard.`}
           actions={
-            <Button component={RouterLink} to="/dashboard/bookings" variant="contained">
+            <Button component={RouterLink} to="/bookings" variant="contained">
               Book / manage appointments
             </Button>
           }
@@ -261,7 +261,7 @@ export default function DashboardHomePage() {
           title={`Hello, ${user?.fullName?.split(' ')[0] ?? 'there'}`}
           description={`Your ${SALON_DISPLAY_NAME} staff overview for today.`}
           actions={
-            <Button component={RouterLink} to="/dashboard/bookings/calendar" variant="contained">
+            <Button component={RouterLink} to="/calendar" variant="contained">
               Open calendar
             </Button>
           }
@@ -478,7 +478,7 @@ export default function DashboardHomePage() {
           title={`Hello, ${user?.fullName?.split(' ')[0] ?? 'there'}`}
           description="Platform overview across all salons."
           actions={
-            <Button component={RouterLink} to="/dashboard/bookings" variant="contained">
+            <Button component={RouterLink} to="/bookings" variant="contained">
               Open all bookings
             </Button>
           }
