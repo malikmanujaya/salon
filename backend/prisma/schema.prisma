@@ -51,6 +51,7 @@ model User {
   salon         Salon?      @relation(fields: [salonId], references: [id], onDelete: SetNull)
 
   staffProfile  StaffProfile?
+  passwordResetOtps PasswordResetOtp[]
   auditLogs     AuditLog[]
   bookings      Booking[]   @relation("BookingCreator")
 
@@ -58,6 +59,22 @@ model User {
   updatedAt     DateTime    @updatedAt
 
   @@index([salonId])
+}
+
+model PasswordResetOtp {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone       String
+  codeHash    String
+  expiresAt   DateTime
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+  usedAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([phone, createdAt])
+  @@index([userId, createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -16,6 +16,11 @@ export type AppConfig = {
     accessExpiresIn: string;
     refreshExpiresIn: string;
   };
+  sms: {
+    userId: string;
+    apiKey: string;
+    senderId: string;
+  };
 };
 
 const encode = (value: string): string => encodeURIComponent(value);
@@ -46,6 +51,11 @@ export const configFactory = (): AppConfig => {
       refreshSecret: process.env.JWT_REFRESH_SECRET ?? 'dev-refresh-secret',
       accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
       refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
+    },
+    sms: {
+      userId: process.env.SMS_USER_ID ?? '',
+      apiKey: process.env.SMS_API_KEY ?? '',
+      senderId: process.env.SMS_SENDER_ID ?? '',
     },
   };
 };

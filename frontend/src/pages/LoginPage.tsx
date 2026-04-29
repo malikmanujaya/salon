@@ -241,7 +241,7 @@ export default function LoginPage() {
                   }
                   label="Stay signed in"
                 />
-                <Link href="#" variant="body2" fontWeight={600} underline="hover">
+                <Link component={RouterLink} to="/forgot-password" variant="body2" fontWeight={600} underline="hover">
                   Forgot password?
                 </Link>
               </Stack>

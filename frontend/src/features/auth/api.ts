@@ -1,7 +1,13 @@
 import { api } from '@/lib/api-client';
 import type { AuthTokensResponse, AuthUser } from '@/types/user';
 
-import type { LoginInput, RegisterInput } from './types';
+import type {
+  ForgotPasswordRequestInput,
+  ForgotPasswordResetInput,
+  ForgotPasswordVerifyInput,
+  LoginInput,
+  RegisterInput,
+} from './types';
 
 export async function loginApi(input: LoginInput) {
   const { data } = await api.post<AuthTokensResponse>('/auth/login', input);
@@ -20,6 +26,21 @@ export async function registerApi(input: RegisterInput) {
 
 export async function fetchMe() {
   const { data } = await api.get<AuthUser>('/auth/me');
+  return data;
+}
+
+export async function requestPasswordResetOtp(input: ForgotPasswordRequestInput) {
+  const { data } = await api.post<{ ok: boolean; message: string }>('/auth/forgot-password/request-otp', input);
+  return data;
+}
+
+export async function verifyPasswordResetOtp(input: ForgotPasswordVerifyInput) {
+  const { data } = await api.post<{ resetToken: string }>('/auth/forgot-password/verify-otp', input);
+  return data;
+}
+
+export async function resetPasswordWithOtp(input: ForgotPasswordResetInput) {
+  const { data } = await api.post<{ ok: boolean }>('/auth/forgot-password/reset', input);
   return data;
 }
 

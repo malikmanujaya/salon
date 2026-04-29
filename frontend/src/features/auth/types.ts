@@ -11,3 +11,18 @@ export type RegisterInput = {
   remember: boolean;
 };
 
+export type ForgotPasswordRequestInput = {
+  phone: string;
+};
+
+export type ForgotPasswordVerifyInput = {
+  phone: string;
+  otp: string;
+};
+
+export type ForgotPasswordResetInput = {
+  phone: string;
+  resetToken: string;
+  newPassword: string;
+};
+
