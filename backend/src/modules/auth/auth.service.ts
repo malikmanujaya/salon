@@ -13,6 +13,7 @@ import { BookingStatus, Prisma } from '@prisma/client';
 
 import type { AppConfig } from '../../config/configuration';
 import { SmsService } from '../../infrastructure/sms/sms.service';
+import { AuditLogService } from '../../common/logging/audit-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { assertUserMayAuthenticate } from './assert-user-may-authenticate';
 import type { RequestUser } from './decorators/current-user.decorator';
@@ -32,6 +33,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService<AppConfig>,
     private readonly smsService: SmsService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   private get jwtOpts() {
@@ -167,6 +169,15 @@ export class AuthService {
       });
 
       const user = await this.buildPublicUser(result.id);
+      await this.auditLog.logDbChange({
+        feature: 'auth',
+        action: 'register',
+        entity: 'user',
+        entityId: user.id,
+        actorId: user.id,
+        salonId: user.salonId,
+        details: { role: user.role, status: user.status },
+      });
       return {
         accessToken: this.signAccess(user),
         refreshToken: this.signRefresh(user.id),
@@ -209,6 +220,15 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
+    });
+    await this.auditLog.logDbChange({
+      feature: 'auth',
+      action: 'update',
+      entity: 'user',
+      entityId: user.id,
+      actorId: user.id,
+      salonId: user.salonId,
+      details: { fields: ['lastLoginAt'] },
     });
 
     const publicUser = await this.buildPublicUser(user.id);
@@ -280,6 +300,15 @@ export class AuthService {
         maxAttempts: OTP_MAX_ATTEMPTS,
       },
     });
+    await this.auditLog.logDbChange({
+      feature: 'auth',
+      action: 'create',
+      entity: 'password_reset_otp',
+      entityId: null,
+      actorId: target.id,
+      salonId: null,
+      details: { userId: target.id, expiresInMinutes: OTP_EXPIRES_MINUTES },
+    });
 
     await this.smsService.sendNotifySms(
       this.normalizePhoneForLk(target.phone),
@@ -309,6 +338,14 @@ export class AuthService {
         where: { id: row.id },
         data: { usedAt: new Date() },
       });
+      await this.auditLog.logDbChange({
+        feature: 'auth',
+        action: 'update',
+        entity: 'password_reset_otp',
+        entityId: row.id,
+        actorId: row.user.id,
+        details: { fields: ['usedAt'], reason: 'expired' },
+      });
       throw new UnauthorizedException('Invalid or expired OTP.');
     }
 
@@ -316,6 +353,14 @@ export class AuthService {
       await this.prisma.passwordResetOtp.update({
         where: { id: row.id },
         data: { usedAt: new Date() },
+      });
+      await this.auditLog.logDbChange({
+        feature: 'auth',
+        action: 'update',
+        entity: 'password_reset_otp',
+        entityId: row.id,
+        actorId: row.user.id,
+        details: { fields: ['usedAt'], reason: 'max_attempts' },
       });
       throw new UnauthorizedException('Invalid or expired OTP.');
     }
@@ -326,12 +371,28 @@ export class AuthService {
         where: { id: row.id },
         data: { attempts: row.attempts + 1 },
       });
+      await this.auditLog.logDbChange({
+        feature: 'auth',
+        action: 'update',
+        entity: 'password_reset_otp',
+        entityId: row.id,
+        actorId: row.user.id,
+        details: { fields: ['attempts'], attempts: row.attempts + 1 },
+      });
       throw new UnauthorizedException('Invalid or expired OTP.');
     }
 
     await this.prisma.passwordResetOtp.update({
       where: { id: row.id },
       data: { usedAt: new Date() },
+    });
+    await this.auditLog.logDbChange({
+      feature: 'auth',
+      action: 'update',
+      entity: 'password_reset_otp',
+      entityId: row.id,
+      actorId: row.user.id,
+      details: { fields: ['usedAt'], reason: 'verified' },
     });
 
     return {
@@ -365,6 +426,15 @@ export class AuthService {
         data: { usedAt: new Date() },
       }),
     ]);
+    await this.auditLog.logDbChange({
+      feature: 'auth',
+      action: 'update',
+      entity: 'user',
+      entityId: user.id,
+      actorId: user.id,
+      salonId: null,
+      details: { fields: ['passwordHash'], reason: 'password_reset' },
+    });
 
     return { ok: true };
   }
@@ -396,6 +466,15 @@ export class AuthService {
       await this.prisma.user.update({
         where: { id: user.id },
         data,
+      });
+      await this.auditLog.logDbChange({
+        feature: 'auth',
+        action: 'update',
+        entity: 'user',
+        entityId: user.id,
+        actorId: user.id,
+        salonId: user.salonId,
+        details: { fields: Object.keys(data) },
       });
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {

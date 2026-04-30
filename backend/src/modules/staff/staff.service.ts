@@ -8,6 +8,7 @@ import * as bcrypt from 'bcryptjs';
 import { BookingStatus, Prisma, StaffStatus, UserStatus } from '@prisma/client';
 
 import type { RequestUser } from '../../common/auth/decorators/current-user.decorator';
+import { AuditLogService } from '../../common/logging/audit-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSalonStaffRole, type CreateStaffMemberDto } from './dto/create-staff-member.dto';
 import { UpdateStaffMemberDto } from './dto/update-staff-member.dto';
@@ -36,7 +37,10 @@ export type SalonStaffMember = Prisma.UserGetPayload<{ select: typeof memberSele
 
 @Injectable()
 export class StaffDirectoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   async staffDashboard(salonId: string, user: RequestUser) {
     if (user.role !== 'STAFF') {
@@ -261,6 +265,15 @@ export class StaffDirectoryService {
         if (!row) throw new NotFoundException('User was not created.');
         return row;
       });
+      await this.auditLog.logDbChange({
+        feature: 'staff',
+        action: 'create',
+        entity: 'user',
+        entityId: created.id,
+        actorId: actor.id,
+        salonId,
+        details: { role: created.role, status: created.status },
+      });
       return created;
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
@@ -339,6 +352,19 @@ export class StaffDirectoryService {
       if (!row) throw new NotFoundException('Staff member was not updated.');
       return row;
     });
+    await this.auditLog.logDbChange({
+      feature: 'staff',
+      action: 'update',
+      entity: 'user',
+      entityId: memberId,
+      actorId: actor.id,
+      salonId,
+      details: {
+        fields: Object.keys(dto),
+        role: updated.role,
+        status: updated.status,
+      },
+    });
 
     return updated;
   }
@@ -366,6 +392,15 @@ export class StaffDirectoryService {
       const row = await tx.user.findUnique({ where: { id: memberId }, select: memberSelect });
       if (!row) throw new NotFoundException('Staff member was not updated.');
       return row;
+    });
+    await this.auditLog.logDbChange({
+      feature: 'staff',
+      action: 'deactivate',
+      entity: 'user',
+      entityId: memberId,
+      actorId: actor.id,
+      salonId,
+      details: { status: updated.status },
     });
 
     return updated;

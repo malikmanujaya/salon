@@ -38,7 +38,7 @@ export class SalonServicesController {
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateSalonServiceDto) {
     this.salonServices.assertCanManage(user);
     const salonId = this.resolveSalonId(user);
-    return this.salonServices.create(salonId, dto);
+    return this.salonServices.create(salonId, dto, user.id);
   }
 
   @Patch(':id')
@@ -46,7 +46,7 @@ export class SalonServicesController {
   update(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: UpdateSalonServiceDto) {
     this.salonServices.assertCanManage(user);
     const salonId = this.resolveSalonId(user);
-    return this.salonServices.update(salonId, id, dto);
+    return this.salonServices.update(salonId, id, dto, user.id);
   }
 
   @Delete(':id')
@@ -54,7 +54,7 @@ export class SalonServicesController {
   deactivate(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     this.salonServices.assertCanManage(user);
     const salonId = this.resolveSalonId(user);
-    return this.salonServices.deactivate(salonId, id);
+    return this.salonServices.deactivate(salonId, id, user.id);
   }
 }
 

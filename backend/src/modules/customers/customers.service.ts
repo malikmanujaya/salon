@@ -7,13 +7,17 @@ import {
 import { BookingStatus, CustomerAccountStatus, Prisma } from '@prisma/client';
 
 import type { RequestUser } from '../../common/auth/decorators/current-user.decorator';
+import { AuditLogService } from '../../common/logging/audit-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 @Injectable()
 export class CustomersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   private assertCanManageCustomers(actor: RequestUser) {
     if (actor.role !== 'SUPER_ADMIN' && actor.role !== 'SALON_OWNER') {
@@ -172,7 +176,7 @@ export class CustomersService {
   async create(salonId: string, dto: CreateCustomerDto) {
     const phone = dto.phone.trim();
     try {
-      return await this.prisma.customer.create({
+      const created = await this.prisma.customer.create({
         data: {
           salonId,
           fullName: dto.fullName.trim(),
@@ -183,6 +187,15 @@ export class CustomersService {
         },
         select: this.customerSelect,
       });
+      await this.auditLog.logDbChange({
+        feature: 'customers',
+        action: 'create',
+        entity: 'customer',
+        entityId: created.id,
+        salonId,
+        details: { accountStatus: created.accountStatus },
+      });
+      return created;
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
         throw new ConflictException('A customer with this phone number already exists.');
@@ -208,11 +221,24 @@ export class CustomersService {
     }
 
     try {
-      return await this.prisma.customer.update({
+      const updated = await this.prisma.customer.update({
         where: { id },
         data,
         select: this.customerSelect,
       });
+      await this.auditLog.logDbChange({
+        feature: 'customers',
+        action: 'update',
+        entity: 'customer',
+        entityId: id,
+        actorId: actor.id,
+        salonId,
+        details: {
+          fields: Object.keys(data),
+          accountStatus: updated.accountStatus,
+        },
+      });
+      return updated;
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
         throw new ConflictException('A customer with this phone number already exists.');
@@ -225,11 +251,21 @@ export class CustomersService {
   async deactivate(salonId: string, id: string, actor: RequestUser) {
     this.assertCanManageCustomers(actor);
     await this.getCustomerOrThrow(salonId, id);
-    return this.prisma.customer.update({
+    const deactivated = await this.prisma.customer.update({
       where: { id },
       data: { accountStatus: CustomerAccountStatus.DEACTIVATED },
       select: this.customerSelect,
     });
+    await this.auditLog.logDbChange({
+      feature: 'customers',
+      action: 'deactivate',
+      entity: 'customer',
+      entityId: id,
+      actorId: actor.id,
+      salonId,
+      details: { accountStatus: deactivated.accountStatus },
+    });
+    return deactivated;
   }
 }
 

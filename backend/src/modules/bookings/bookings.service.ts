@@ -8,6 +8,7 @@ import {
 import { BookingSource, BookingStatus, CustomerAccountStatus, Prisma } from '@prisma/client';
 
 import type { RequestUser } from '../../common/auth/decorators/current-user.decorator';
+import { AuditLogService } from '../../common/logging/audit-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { QueryBookingsDto } from './dto/query-bookings.dto';
@@ -23,7 +24,10 @@ type LoadedBooking = Prisma.BookingGetPayload<{ include: typeof bookingInclude }
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   private readonly terminalStatuses: BookingStatus[] = [
     BookingStatus.CANCELLED,
@@ -48,16 +52,24 @@ export class BookingsService {
       }
       return existing.id;
     }
-    return (
-      await this.prisma.customer.create({
+    const created = await this.prisma.customer.create({
         data: {
           salonId,
           fullName: user.fullName,
           phone,
           email: user.email,
         },
-      })
-    ).id;
+      });
+    await this.auditLog.logDbChange({
+      feature: 'bookings',
+      action: 'create',
+      entity: 'customer',
+      entityId: created.id,
+      actorId: user.id,
+      salonId,
+      details: { source: 'auto-create-self-customer' },
+    });
+    return created.id;
   }
 
   private async assertCustomerOwnsBooking(user: RequestUser, salonId: string, booking: LoadedBooking) {
@@ -208,7 +220,7 @@ export class BookingsService {
     const source =
       user.role === 'CUSTOMER' ? BookingSource.PUBLIC_WEB : BookingSource.ADMIN_PORTAL;
 
-    return this.prisma.booking.create({
+    const created = await this.prisma.booking.create({
       data: {
         salonId,
         branchId: null,
@@ -230,6 +242,20 @@ export class BookingsService {
       },
       include: bookingInclude,
     });
+    await this.auditLog.logDbChange({
+      feature: 'bookings',
+      action: 'create',
+      entity: 'booking',
+      entityId: created.id,
+      actorId: user.id,
+      salonId,
+      details: {
+        customerId: created.customerId,
+        staffId: created.staffId,
+        status: created.status,
+      },
+    });
+    return created;
   }
 
   async update(salonId: string, id: string, dto: UpdateBookingDto, user: RequestUser) {
@@ -274,7 +300,7 @@ export class BookingsService {
         await this.assertStaffSlot(salonId, staffId, start, end, id);
       }
 
-      return this.prisma.$transaction(async (tx) => {
+      const updatedWithLines = await this.prisma.$transaction(async (tx) => {
         await tx.bookingService.deleteMany({ where: { bookingId: id } });
         await tx.bookingService.createMany({
           data: lines.map((l) => ({
@@ -296,6 +322,20 @@ export class BookingsService {
           include: bookingInclude,
         });
       });
+      await this.auditLog.logDbChange({
+        feature: 'bookings',
+        action: 'update',
+        entity: 'booking',
+        entityId: id,
+        actorId: user.id,
+        salonId,
+        details: {
+          fields: Object.keys(dto),
+          status: updatedWithLines.status,
+          serviceCount: updatedWithLines.services.length,
+        },
+      });
+      return updatedWithLines;
     }
 
     if (dto.startTime) {
@@ -321,7 +361,7 @@ export class BookingsService {
       await this.assertStaffSlot(salonId, staffId, start, end, id);
     }
 
-    return this.prisma.booking.update({
+    const updated = await this.prisma.booking.update({
       where: { id },
       data: {
         ...(dto.startTime ? { startTime: start, endTime: end } : {}),
@@ -331,16 +371,36 @@ export class BookingsService {
       },
       include: bookingInclude,
     });
+    await this.auditLog.logDbChange({
+      feature: 'bookings',
+      action: 'update',
+      entity: 'booking',
+      entityId: id,
+      actorId: user.id,
+      salonId,
+      details: { fields: Object.keys(dto), status: updated.status },
+    });
+    return updated;
   }
 
   async cancel(salonId: string, id: string, user: RequestUser) {
     const existing = await this.findOne(salonId, id, user);
     this.assertCanCancel(user, existing);
-    return this.prisma.booking.update({
+    const cancelled = await this.prisma.booking.update({
       where: { id },
       data: { status: BookingStatus.CANCELLED },
       include: bookingInclude,
     });
+    await this.auditLog.logDbChange({
+      feature: 'bookings',
+      action: 'cancel',
+      entity: 'booking',
+      entityId: id,
+      actorId: user.id,
+      salonId,
+      details: { status: cancelled.status },
+    });
+    return cancelled;
   }
 }
 

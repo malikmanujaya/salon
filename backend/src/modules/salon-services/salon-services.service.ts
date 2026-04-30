@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { Prisma } from '@prisma/client';
 
 import type { RequestUser } from '../../common/auth/decorators/current-user.decorator';
+import { AuditLogService } from '../../common/logging/audit-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSalonServiceDto } from './dto/create-salon-service.dto';
 import { UpdateSalonServiceDto } from './dto/update-salon-service.dto';
@@ -30,7 +31,10 @@ export type SalonServiceRow = Prisma.ServiceGetPayload<{ select: typeof serviceS
 
 @Injectable()
 export class SalonServicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   assertCanView(user: RequestUser) {
     if (user.role === 'CUSTOMER') {
@@ -98,9 +102,13 @@ export class SalonServicesService {
     });
   }
 
-  async create(salonId: string, dto: CreateSalonServiceDto): Promise<SalonServiceRow> {
+  async create(
+    salonId: string,
+    dto: CreateSalonServiceDto,
+    actorId?: string,
+  ): Promise<SalonServiceRow> {
     const staffIds = await this.sanitizeStaffIds(salonId, dto.staffIds);
-    return this.prisma.service.create({
+    const created = await this.prisma.service.create({
       data: {
         salonId,
         name: dto.name.trim(),
@@ -114,9 +122,24 @@ export class SalonServicesService {
       },
       select: serviceSelect,
     });
+    await this.auditLog.logDbChange({
+      feature: 'salon-services',
+      action: 'create',
+      entity: 'service',
+      entityId: created.id,
+      actorId: actorId ?? null,
+      salonId,
+      details: { isActive: created.isActive, staffCount: created.staff.length },
+    });
+    return created;
   }
 
-  async update(salonId: string, serviceId: string, dto: UpdateSalonServiceDto): Promise<SalonServiceRow> {
+  async update(
+    salonId: string,
+    serviceId: string,
+    dto: UpdateSalonServiceDto,
+    actorId?: string,
+  ): Promise<SalonServiceRow> {
     const existing = await this.prisma.service.findFirst({
       where: { id: serviceId, salonId },
       select: { id: true },
@@ -127,7 +150,7 @@ export class SalonServicesService {
 
     const staffIds = dto.staffIds ? await this.sanitizeStaffIds(salonId, dto.staffIds) : undefined;
 
-    return this.prisma.service.update({
+    const updated = await this.prisma.service.update({
       where: { id: serviceId },
       data: {
         name: dto.name?.trim(),
@@ -142,9 +165,19 @@ export class SalonServicesService {
       },
       select: serviceSelect,
     });
+    await this.auditLog.logDbChange({
+      feature: 'salon-services',
+      action: 'update',
+      entity: 'service',
+      entityId: serviceId,
+      actorId: actorId ?? null,
+      salonId,
+      details: { fields: Object.keys(dto), isActive: updated.isActive, staffCount: updated.staff.length },
+    });
+    return updated;
   }
 
-  async deactivate(salonId: string, serviceId: string): Promise<SalonServiceRow> {
+  async deactivate(salonId: string, serviceId: string, actorId?: string): Promise<SalonServiceRow> {
     const existing = await this.prisma.service.findFirst({
       where: { id: serviceId, salonId },
       select: { id: true },
@@ -152,11 +185,21 @@ export class SalonServicesService {
     if (!existing) {
       throw new NotFoundException('Service not found.');
     }
-    return this.prisma.service.update({
+    const deactivated = await this.prisma.service.update({
       where: { id: serviceId },
       data: { isActive: false },
       select: serviceSelect,
     });
+    await this.auditLog.logDbChange({
+      feature: 'salon-services',
+      action: 'deactivate',
+      entity: 'service',
+      entityId: serviceId,
+      actorId: actorId ?? null,
+      salonId,
+      details: { isActive: deactivated.isActive },
+    });
+    return deactivated;
   }
 }
 

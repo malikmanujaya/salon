@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { configValidationSchema, configFactory } from './config/configuration';
+import { LoggingModule } from './common/logging/logging.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -18,6 +19,7 @@ import { StaffModule } from './modules/staff/staff.module';
       load: [configFactory],
       validate: configValidationSchema,
     }),
+    LoggingModule,
     PrismaModule,
     HealthModule,
     AuthModule,
