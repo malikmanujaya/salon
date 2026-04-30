@@ -280,9 +280,11 @@ export class AuthService {
       select: { id: true, phone: true, status: true },
     });
 
-    if (!target || !target.phone || target.status !== 'ACTIVE') {
-      // Keep response generic to avoid account enumeration.
-      return { ok: true, message: 'If the phone exists, an OTP has been sent.' };
+    if (!target || !target.phone) {
+      throw new BadRequestException('Phone number is not registered.');
+    }
+    if (target.status !== 'ACTIVE') {
+      throw new BadRequestException('This account cannot reset password right now.');
     }
 
     await this.prisma.passwordResetOtp.updateMany({
@@ -309,7 +311,7 @@ export class AuthService {
       `Your password reset OTP is ${otp}. It expires in ${OTP_EXPIRES_MINUTES} minutes.`,
     );
 
-    return { ok: true, message: 'If the phone exists, an OTP has been sent.' };
+    return { ok: true, message: 'OTP sent successfully.' };
   }
 
   async verifyPasswordResetOtp(phoneInput: string, otp: string) {

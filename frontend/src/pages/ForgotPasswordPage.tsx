@@ -6,87 +6,26 @@ import Grid from '@mui/material/Grid2';
 import { LabeledTextField } from '@/components/ui';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { gradients, palette } from '@/theme/palette';
-import {
-  requestPasswordResetOtp,
-  resetPasswordWithOtp,
-  verifyPasswordResetOtp,
-} from '@/features/auth/api';
-
-type Step = 'request' | 'verify' | 'reset' | 'done';
+import { requestPasswordResetOtp } from '@/features/auth/api';
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>('request');
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [resetToken, setResetToken] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
 
-  const requestOtp = async () => {
+  const requestOtpAndContinue = async () => {
     setError(null);
-    setInfo(null);
     if (!phone.trim()) {
       setError('Phone is required.');
       return;
     }
     setBusy(true);
     try {
-      const data = await requestPasswordResetOtp({ phone: phone.trim() });
-      setInfo(data.message);
-      setStep('verify');
+      await requestPasswordResetOtp({ phone: phone.trim() });
+      navigate('/forgot-password/otp', { state: { phone: phone.trim() } });
     } catch (e) {
       setError(getApiErrorMessage(e, 'Could not request OTP.'));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const verifyOtp = async () => {
-    setError(null);
-    setInfo(null);
-    if (!otp.trim()) {
-      setError('OTP is required.');
-      return;
-    }
-    setBusy(true);
-    try {
-      const data = await verifyPasswordResetOtp({ phone: phone.trim(), otp: otp.trim() });
-      setResetToken(data.resetToken);
-      setInfo('OTP verified. You can now set a new password.');
-      setStep('reset');
-    } catch (e) {
-      setError(getApiErrorMessage(e, 'Invalid OTP.'));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const resetPassword = async () => {
-    setError(null);
-    setInfo(null);
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    setBusy(true);
-    try {
-      await resetPasswordWithOtp({
-        phone: phone.trim(),
-        resetToken,
-        newPassword,
-      });
-      setStep('done');
-      setInfo('Password reset successful. You can sign in now.');
-    } catch (e) {
-      setError(getApiErrorMessage(e, 'Could not reset password.'));
     } finally {
       setBusy(false);
     }
@@ -158,17 +97,12 @@ export default function ForgotPasswordPage() {
             Forgot password
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Reset your password with an SMS OTP.
+            Enter your registered phone number to receive an OTP.
           </Typography>
 
           {error ? (
             <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
               {error}
-            </Alert>
-          ) : null}
-          {info ? (
-            <Alert severity="info" sx={{ mb: 2 }} onClose={() => setInfo(null)}>
-              {info}
             </Alert>
           ) : null}
 
@@ -187,71 +121,22 @@ export default function ForgotPasswordPage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
-                disabled={step !== 'request' && step !== 'verify'}
+                disabled={busy}
               />
-
-              {step === 'verify' ? (
-                <LabeledTextField
-                  label="OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  required
-                  helperText="Enter the 6-digit code sent via SMS."
-                />
-              ) : null}
-
-              {step === 'reset' ? (
-                <>
-                  <LabeledTextField
-                    label="New password"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                  />
-                  <LabeledTextField
-                    label="Confirm password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </>
-              ) : null}
-
-              {step === 'request' ? (
-                <Button variant="contained" onClick={() => void requestOtp()} disabled={busy}>
-                  Send OTP
-                </Button>
-              ) : null}
-
-              {step === 'verify' ? (
-                <Stack direction="row" spacing={1.5}>
-                  <Button variant="contained" onClick={() => void verifyOtp()} disabled={busy}>
-                    Verify OTP
-                  </Button>
-                  <Button variant="outlined" onClick={() => void requestOtp()} disabled={busy}>
-                    Resend OTP
-                  </Button>
-                </Stack>
-              ) : null}
-
-              {step === 'reset' ? (
-                <Button variant="contained" onClick={() => void resetPassword()} disabled={busy}>
-                  Reset password
-                </Button>
-              ) : null}
-
-              {step === 'done' ? (
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    navigate('/login', { replace: true });
-                  }}
-                >
-                  Back to sign in
-                </Button>
-              ) : null}
+              <Button variant="contained" onClick={() => void requestOtpAndContinue()} disabled={busy}>
+                Continue to OTP
+              </Button>
+              <Typography variant="caption" color="text.secondary">
+                We only continue if the phone is valid and registered.
+              </Typography>
+              <Button
+                variant="text"
+                onClick={() => {
+                  navigate('/login', { replace: true });
+                }}
+              >
+                Back to sign in
+              </Button>
             </Stack>
           </Box>
 

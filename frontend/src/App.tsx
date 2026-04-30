@@ -8,6 +8,7 @@ import AppLayout from './app/layout';
 import HomePage from './app/page';
 import LoginPage from './app/login/page';
 import ForgotPasswordPage from './app/forgot-password/page';
+import ForgotPasswordOtpPage from './app/forgot-password/otp/page';
 import SignupPage from './app/signup/page';
 import DashboardHomePage from './app/overview/page';
 import BookingsPage from './app/bookings/page';
@@ -35,6 +36,7 @@ export default function App() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/forgot-password/otp" element={<ForgotPasswordOtpPage />} />
           <Route path="/signup" element={<SignupPage />} />
         </Route>
         <Route element={<ProtectedRoute />}>
