@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Box,
@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useFormik } from 'formik';
 
 import { AppDataTable, type AppTableColumn } from '@/components/ui/AppDataTable';
 import { CreateModal } from '@/components/ui/CreateModal';
@@ -51,13 +52,6 @@ export default function ServicesPage() {
   const [deactivating, setDeactivating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState('60');
-  const [price, setPrice] = useState('');
-  const [currency, setCurrency] = useState('LKR');
-  const [staffIds, setStaffIds] = useState<string[]>([]);
 
   const servicesQuery = useQuery({
     queryKey: ['services', 'all', search],
@@ -118,90 +112,91 @@ export default function ServicesPage() {
     },
   ];
 
-  const resetForm = () => {
-    setName('');
-    setDescription('');
-    setDurationMinutes('60');
-    setPrice('');
-    setCurrency('LKR');
-    setStaffIds([]);
+  const buildPayload = (values: {
+    name: string;
+    description: string;
+    durationMinutes: string;
+    price: string;
+    currency: string;
+    staffIds: string[];
+  }) => ({
+    name: values.name.trim(),
+    description: values.description.trim() || undefined,
+    durationMinutes: Number(values.durationMinutes),
+    priceCents: Math.round(Number(values.price || 0) * 100),
+    currency: values.currency.trim().toUpperCase() || 'LKR',
+    staffIds: values.staffIds,
+  });
+
+  const validateValues = (values: {
+    name: string;
+    durationMinutes: string;
+    price: string;
+  }) => {
+    const errors: Record<string, string> = {};
+    if (!values.name.trim()) errors.name = 'Service name is required.';
+    const duration = Number(values.durationMinutes);
+    if (!Number.isFinite(duration) || duration < 5) errors.durationMinutes = 'Duration must be at least 5 minutes.';
+    const priceCents = Math.round(Number(values.price || 0) * 100);
+    if (!Number.isFinite(priceCents) || priceCents < 0) errors.price = 'Price must be zero or more.';
+    return errors;
   };
 
-  const loadFromRow = (row: ServiceRow) => {
-    setName(row.name);
-    setDescription(row.description ?? '');
-    setDurationMinutes(String(row.durationMinutes));
-    setPrice(String(row.priceCents / 100));
-    setCurrency(row.currency || 'LKR');
-    setStaffIds(row.staff.map((x) => x.id));
-  };
+  const createFormik = useFormik({
+    initialValues: {
+      name: '',
+      description: '',
+      durationMinutes: '60',
+      price: '',
+      currency: 'LKR',
+      staffIds: [] as string[],
+    },
+    validate: validateValues,
+    onSubmit: async (values, helpers) => {
+      setActionError(null);
+      setSaving(true);
+      try {
+        await api.post('/salon-services', buildPayload(values));
+        setOpenCreate(false);
+        helpers.resetForm();
+        await qc.invalidateQueries({ queryKey: ['services'] });
+        await qc.invalidateQueries({ queryKey: ['salon-services'] });
+      } catch (err) {
+        setActionError(getApiErrorMessage(err, 'Could not create service.'));
+      } finally {
+        setSaving(false);
+      }
+    },
+  });
 
-  const payload = useMemo(() => {
-    const duration = Number(durationMinutes);
-    const priceMinor = Math.round(Number(price || 0) * 100);
-    return {
-      name: name.trim(),
-      description: description.trim() || undefined,
-      durationMinutes: duration,
-      priceCents: priceMinor,
-      currency: currency.trim().toUpperCase() || 'LKR',
-      staffIds,
-    };
-  }, [name, description, durationMinutes, price, currency, staffIds]);
+  const editFormik = useFormik({
+    enableReinitialize: true,
+    initialValues: {
+      name: editing?.name ?? '',
+      description: editing?.description ?? '',
+      durationMinutes: editing ? String(editing.durationMinutes) : '60',
+      price: editing ? String(editing.priceCents / 100) : '',
+      currency: editing?.currency || 'LKR',
+      staffIds: editing?.staff.map((x) => x.id) ?? [],
+    },
+    validate: validateValues,
+    onSubmit: async (values) => {
+      if (!editing) return;
+      setActionError(null);
+      setSaving(true);
+      try {
+        await api.patch(`/salon-services/${editing.id}`, buildPayload(values));
+        setEditing(null);
+        await qc.invalidateQueries({ queryKey: ['services'] });
+        await qc.invalidateQueries({ queryKey: ['salon-services'] });
+      } catch (err) {
+        setActionError(getApiErrorMessage(err, 'Could not update service.'));
+      } finally {
+        setSaving(false);
+      }
+    },
+  });
 
-  const validatePayload = (): string | null => {
-    if (!payload.name) return 'Service name is required.';
-    if (!Number.isFinite(payload.durationMinutes) || payload.durationMinutes < 5) {
-      return 'Duration must be at least 5 minutes.';
-    }
-    if (!Number.isFinite(payload.priceCents) || payload.priceCents < 0) {
-      return 'Price must be zero or more.';
-    }
-    return null;
-  };
-
-  const submitCreate = async () => {
-    const issue = validatePayload();
-    setActionError(null);
-    if (issue) {
-      setActionError(issue);
-      return;
-    }
-    setSaving(true);
-    try {
-      await api.post('/salon-services', payload);
-      setOpenCreate(false);
-      resetForm();
-      await qc.invalidateQueries({ queryKey: ['services'] });
-      await qc.invalidateQueries({ queryKey: ['salon-services'] });
-    } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Could not create service.'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const submitEdit = async () => {
-    if (!editing) return;
-    const issue = validatePayload();
-    setActionError(null);
-    if (issue) {
-      setActionError(issue);
-      return;
-    }
-    setSaving(true);
-    try {
-      await api.patch(`/salon-services/${editing.id}`, payload);
-      setEditing(null);
-      resetForm();
-      await qc.invalidateQueries({ queryKey: ['services'] });
-      await qc.invalidateQueries({ queryKey: ['salon-services'] });
-    } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Could not update service.'));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const confirmDeactivate = async () => {
     if (!deactivateTarget) return;
@@ -240,7 +235,6 @@ export default function ServicesPage() {
   const openEdit = (row: ServiceRow) => {
     setEditing(row);
     setActionError(null);
-    loadFromRow(row);
   };
 
   return (
@@ -254,7 +248,7 @@ export default function ServicesPage() {
               variant="contained"
               startIcon={<AddRoundedIcon />}
               onClick={() => {
-                resetForm();
+                createFormik.resetForm();
                 setActionError(null);
                 setOpenCreate(true);
               }}
@@ -310,33 +304,62 @@ export default function ServicesPage() {
         onClose={() => setOpenCreate(false)}
         title="Add service"
         submitLabel="Create service"
-        onSubmit={submitCreate}
+        onSubmit={createFormik.submitForm}
         loading={saving}
       >
-        <LabeledTextField label="Service name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <LabeledTextField
+          label="Service name"
+          name="name"
+          value={createFormik.values.name}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+          error={createFormik.touched.name && Boolean(createFormik.errors.name)}
+          helperText={createFormik.touched.name ? createFormik.errors.name : undefined}
+          required
+        />
         <LabeledTextField
           label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          name="description"
+          value={createFormik.values.description}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
           multiline
           minRows={2}
         />
         <LabeledTextField
           label="Duration (minutes)"
-          value={durationMinutes}
-          onChange={(e) => setDurationMinutes(e.target.value)}
+          name="durationMinutes"
+          value={createFormik.values.durationMinutes}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+          error={createFormik.touched.durationMinutes && Boolean(createFormik.errors.durationMinutes)}
+          helperText={createFormik.touched.durationMinutes ? createFormik.errors.durationMinutes : undefined}
           required
           type="number"
         />
         <LabeledTextField
           label="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
+          name="price"
+          value={createFormik.values.price}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+          error={createFormik.touched.price && Boolean(createFormik.errors.price)}
+          helperText={
+            createFormik.touched.price && createFormik.errors.price
+              ? createFormik.errors.price
+              : 'Major units (e.g. 2500.00)'
+          }
           required
           type="number"
-          helperText="Major units (e.g. 2500.00)"
         />
-        <LabeledTextField label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)} required />
+        <LabeledTextField
+          label="Currency"
+          name="currency"
+          value={createFormik.values.currency}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+          required
+        />
         <FormControl fullWidth>
           <InputLabel id="service-create-staff-label" shrink>
             Assign staff
@@ -344,9 +367,12 @@ export default function ServicesPage() {
           <Select<string[]>
             multiple
             labelId="service-create-staff-label"
-            value={staffIds}
+            value={createFormik.values.staffIds}
             onChange={(e: SelectChangeEvent<string[]>) =>
-              setStaffIds(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)
+              createFormik.setFieldValue(
+                'staffIds',
+                typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value,
+              )
             }
             input={<OutlinedInput label="Assign staff" />}
             renderValue={(selected) =>
@@ -358,7 +384,7 @@ export default function ServicesPage() {
           >
             {staffOptions.map((s) => (
               <MenuItem key={s.id} value={s.id}>
-                <Checkbox checked={staffIds.includes(s.id)} />
+                <Checkbox checked={createFormik.values.staffIds.includes(s.id)} />
                 <ListItemText primary={s.user.fullName} secondary={s.title ?? 'Stylist'} />
               </MenuItem>
             ))}
@@ -371,33 +397,62 @@ export default function ServicesPage() {
         onClose={() => setEditing(null)}
         title="Edit service"
         submitLabel="Save changes"
-        onSubmit={submitEdit}
+        onSubmit={editFormik.submitForm}
         loading={saving}
       >
-        <LabeledTextField label="Service name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <LabeledTextField
+          label="Service name"
+          name="name"
+          value={editFormik.values.name}
+          onChange={editFormik.handleChange}
+          onBlur={editFormik.handleBlur}
+          error={editFormik.touched.name && Boolean(editFormik.errors.name)}
+          helperText={editFormik.touched.name ? editFormik.errors.name : undefined}
+          required
+        />
         <LabeledTextField
           label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          name="description"
+          value={editFormik.values.description}
+          onChange={editFormik.handleChange}
+          onBlur={editFormik.handleBlur}
           multiline
           minRows={2}
         />
         <LabeledTextField
           label="Duration (minutes)"
-          value={durationMinutes}
-          onChange={(e) => setDurationMinutes(e.target.value)}
+          name="durationMinutes"
+          value={editFormik.values.durationMinutes}
+          onChange={editFormik.handleChange}
+          onBlur={editFormik.handleBlur}
+          error={editFormik.touched.durationMinutes && Boolean(editFormik.errors.durationMinutes)}
+          helperText={editFormik.touched.durationMinutes ? editFormik.errors.durationMinutes : undefined}
           required
           type="number"
         />
         <LabeledTextField
           label="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
+          name="price"
+          value={editFormik.values.price}
+          onChange={editFormik.handleChange}
+          onBlur={editFormik.handleBlur}
+          error={editFormik.touched.price && Boolean(editFormik.errors.price)}
+          helperText={
+            editFormik.touched.price && editFormik.errors.price
+              ? editFormik.errors.price
+              : 'Major units (e.g. 2500.00)'
+          }
           required
           type="number"
-          helperText="Major units (e.g. 2500.00)"
         />
-        <LabeledTextField label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)} required />
+        <LabeledTextField
+          label="Currency"
+          name="currency"
+          value={editFormik.values.currency}
+          onChange={editFormik.handleChange}
+          onBlur={editFormik.handleBlur}
+          required
+        />
         <FormControl fullWidth>
           <InputLabel id="service-edit-staff-label" shrink>
             Assign staff
@@ -405,9 +460,12 @@ export default function ServicesPage() {
           <Select<string[]>
             multiple
             labelId="service-edit-staff-label"
-            value={staffIds}
+            value={editFormik.values.staffIds}
             onChange={(e: SelectChangeEvent<string[]>) =>
-              setStaffIds(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)
+              editFormik.setFieldValue(
+                'staffIds',
+                typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value,
+              )
             }
             input={<OutlinedInput label="Assign staff" />}
             renderValue={(selected) =>
@@ -419,7 +477,7 @@ export default function ServicesPage() {
           >
             {staffOptions.map((s) => (
               <MenuItem key={s.id} value={s.id}>
-                <Checkbox checked={staffIds.includes(s.id)} />
+                <Checkbox checked={editFormik.values.staffIds.includes(s.id)} />
                 <ListItemText primary={s.user.fullName} secondary={s.title ?? 'Stylist'} />
               </MenuItem>
             ))}

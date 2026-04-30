@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, Box, Button, Chip, FormControlLabel, Stack, Switch } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { useQueryClient } from '@tanstack/react-query';
+import { useFormik } from 'formik';
 
 import { AppDataTable, type AppTableColumn } from '@/components/ui/AppDataTable';
 import { CreateModal } from '@/components/ui/CreateModal';
@@ -60,15 +61,7 @@ export default function CustomersPage() {
   const [creating, setCreating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const [newName, setNewName] = useState('');
-  const [newPhone, setNewPhone] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-
   const [editing, setEditing] = useState<CustomerSummary | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [editEmail, setEditEmail] = useState('');
-  const [editAccountStatus, setEditAccountStatus] = useState<CustomerAccountStatus>('ACTIVE');
   const [updating, setUpdating] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<CustomerSummary | null>(null);
@@ -132,72 +125,83 @@ export default function CustomersPage() {
     );
   }
 
-  const submitCreate = async () => {
-    setActionError(null);
-    if (!newName.trim() || !newPhone.trim()) {
-      setActionError('Full name and phone are required.');
-      return;
-    }
-    if (!effectiveSalonId) {
-      setActionError('No salon selected.');
-      return;
-    }
-    setCreating(true);
-    try {
-      await createCustomer({
-        fullName: newName.trim(),
-        phone: newPhone.trim(),
-        email: newEmail.trim() || undefined,
-      });
-      setOpenCreate(false);
-      setNewName('');
-      setNewPhone('');
-      setNewEmail('');
-      await qc.invalidateQueries({ queryKey: customersKeys.all });
-    } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Could not create customer.'));
-    } finally {
-      setCreating(false);
-    }
-  };
+  const createFormik = useFormik({
+    initialValues: {
+      fullName: '',
+      phone: '',
+      email: '',
+    },
+    validate: (values) => {
+      const errors: Record<string, string> = {};
+      if (!values.fullName.trim()) errors.fullName = 'Full name is required.';
+      if (!values.phone.trim()) errors.phone = 'Phone is required.';
+      return errors;
+    },
+    onSubmit: async (values) => {
+      setActionError(null);
+      if (!effectiveSalonId) {
+        setActionError('No salon selected.');
+        return;
+      }
+      setCreating(true);
+      try {
+        await createCustomer({
+          fullName: values.fullName.trim(),
+          phone: values.phone.trim(),
+          email: values.email.trim() || undefined,
+        });
+        setOpenCreate(false);
+        createFormik.resetForm();
+        await qc.invalidateQueries({ queryKey: customersKeys.all });
+      } catch (err) {
+        setActionError(getApiErrorMessage(err, 'Could not create customer.'));
+      } finally {
+        setCreating(false);
+      }
+    },
+  });
 
   const openEdit = (c: CustomerSummary) => {
     setEditing(c);
-    setEditName(c.fullName);
-    setEditPhone(c.phone);
-    setEditEmail(c.email ?? '');
-    setEditAccountStatus(c.accountStatus);
     setActionError(null);
   };
 
-  const submitEdit = async () => {
-    if (!editing) return;
-    setActionError(null);
-    if (!editName.trim()) {
-      setActionError('Full name is required.');
-      return;
-    }
-    const digits = editPhone.replace(/\D/g, '');
-    if (digits.length !== 10) {
-      setActionError('Phone must be exactly 10 digits.');
-      return;
-    }
-    setUpdating(true);
-    try {
-      await updateCustomer(editing.id, {
-        fullName: editName.trim(),
-        phone: digits,
-        email: editEmail.trim() ? editEmail.trim() : null,
-        accountStatus: editAccountStatus,
-      });
-      setEditing(null);
-      await qc.invalidateQueries({ queryKey: customersKeys.all });
-    } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Could not update customer.'));
-    } finally {
-      setUpdating(false);
-    }
-  };
+  const editFormik = useFormik({
+    enableReinitialize: true,
+    initialValues: {
+      fullName: editing?.fullName ?? '',
+      phone: editing?.phone ?? '',
+      email: editing?.email ?? '',
+      accountStatus: (editing?.accountStatus ?? 'ACTIVE') as CustomerAccountStatus,
+    },
+    validate: (values) => {
+      const errors: Record<string, string> = {};
+      if (!values.fullName.trim()) errors.fullName = 'Full name is required.';
+      const digits = values.phone.replace(/\D/g, '');
+      if (digits.length !== 10) errors.phone = 'Phone must be exactly 10 digits.';
+      return errors;
+    },
+    onSubmit: async (values) => {
+      if (!editing) return;
+      setActionError(null);
+      const digits = values.phone.replace(/\D/g, '');
+      setUpdating(true);
+      try {
+        await updateCustomer(editing.id, {
+          fullName: values.fullName.trim(),
+          phone: digits,
+          email: values.email.trim() ? values.email.trim() : null,
+          accountStatus: values.accountStatus,
+        });
+        setEditing(null);
+        await qc.invalidateQueries({ queryKey: customersKeys.all });
+      } catch (err) {
+        setActionError(getApiErrorMessage(err, 'Could not update customer.'));
+      } finally {
+        setUpdating(false);
+      }
+    },
+  });
 
   const confirmDeactivate = async () => {
     if (!deleteTarget) return;
@@ -228,6 +232,7 @@ export default function CustomersPage() {
             variant="contained"
             startIcon={<AddRoundedIcon />}
             onClick={() => {
+              createFormik.resetForm();
               setOpenCreate(true);
             }}
             disabled={!effectiveSalonId}
@@ -302,12 +307,37 @@ export default function CustomersPage() {
         onClose={() => setOpenCreate(false)}
         title="Add customer"
         submitLabel="Create customer"
-        onSubmit={submitCreate}
+        onSubmit={createFormik.submitForm}
         loading={creating}
       >
-        <LabeledTextField label="Full name" value={newName} onChange={(e) => setNewName(e.target.value)} required />
-        <LabeledTextField label="Phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} required />
-        <LabeledTextField label="Email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+        <LabeledTextField
+          label="Full name"
+          name="fullName"
+          value={createFormik.values.fullName}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+          error={createFormik.touched.fullName && Boolean(createFormik.errors.fullName)}
+          helperText={createFormik.touched.fullName ? createFormik.errors.fullName : undefined}
+          required
+        />
+        <LabeledTextField
+          label="Phone"
+          name="phone"
+          value={createFormik.values.phone}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+          error={createFormik.touched.phone && Boolean(createFormik.errors.phone)}
+          helperText={createFormik.touched.phone ? createFormik.errors.phone : undefined}
+          required
+        />
+        <LabeledTextField
+          label="Email"
+          name="email"
+          value={createFormik.values.email}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+          type="email"
+        />
       </CreateModal>
 
       <EditModal
@@ -315,22 +345,45 @@ export default function CustomersPage() {
         onClose={() => setEditing(null)}
         title="Edit customer"
         submitLabel="Save changes"
-        onSubmit={submitEdit}
+        onSubmit={editFormik.submitForm}
         loading={updating}
       >
-        <LabeledTextField label="Full name" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+        <LabeledTextField
+          label="Full name"
+          name="fullName"
+          value={editFormik.values.fullName}
+          onChange={editFormik.handleChange}
+          onBlur={editFormik.handleBlur}
+          error={editFormik.touched.fullName && Boolean(editFormik.errors.fullName)}
+          helperText={editFormik.touched.fullName ? editFormik.errors.fullName : undefined}
+          required
+        />
         <LabeledTextField
           label="Phone"
-          value={editPhone}
-          onChange={(e) => setEditPhone(e.target.value)}
+          name="phone"
+          value={editFormik.values.phone}
+          onChange={editFormik.handleChange}
+          onBlur={editFormik.handleBlur}
+          error={editFormik.touched.phone && Boolean(editFormik.errors.phone)}
+          helperText={
+            editFormik.touched.phone && editFormik.errors.phone
+              ? editFormik.errors.phone
+              : 'Exactly 10 digits (non-digits are stripped on save).'
+          }
           required
-          helperText="Exactly 10 digits (non-digits are stripped on save)."
         />
-        <LabeledTextField label="Email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} type="email" />
+        <LabeledTextField
+          label="Email"
+          name="email"
+          value={editFormik.values.email}
+          onChange={editFormik.handleChange}
+          onBlur={editFormik.handleBlur}
+          type="email"
+        />
         <LabeledSelect
           label="Account status"
-          value={editAccountStatus}
-          onChange={(e) => setEditAccountStatus(e.target.value as CustomerAccountStatus)}
+          value={editFormik.values.accountStatus}
+          onChange={(e) => editFormik.setFieldValue('accountStatus', e.target.value as CustomerAccountStatus)}
           options={ACCOUNT_STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
           required
         />

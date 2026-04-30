@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, Box, Button, Chip, Stack } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { useQueryClient } from '@tanstack/react-query';
+import { useFormik } from 'formik';
 
 import { AppDataTable, type AppTableColumn } from '@/components/ui/AppDataTable';
 import { CreateModal } from '@/components/ui/CreateModal';
@@ -91,14 +92,6 @@ export default function StaffPage() {
   const [deactivateTarget, setDeactivateTarget] = useState<SalonStaffMember | null>(null);
   const [search, setSearch] = useState('');
 
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<CreateSalonStaffRole>('STAFF');
-  const [title, setTitle] = useState('');
-  const [accountStatus, setAccountStatus] = useState<StaffUserStatus>('ACTIVE');
-
   const membersQuery = useStaffMembersList(
     { q: search.trim() || undefined },
     !authLoading && user?.role !== 'CUSTOMER',
@@ -167,77 +160,87 @@ export default function StaffPage() {
     );
   }
 
-  const submitCreate = async () => {
-    setActionError(null);
-    if (!fullName.trim() || !email.trim() || password.length < 8) {
-      setActionError('Name, email, and a password of at least 8 characters are required.');
-      return;
-    }
-    setCreating(true);
-    try {
-      await createStaffMember({
-        fullName: fullName.trim(),
-        email: email.trim(),
-        password,
-        phone: phone.trim() || undefined,
-        role,
-        title: role === 'STAFF' ? title.trim() || undefined : undefined,
-      });
-      setOpenCreate(false);
-      setFullName('');
-      setEmail('');
-      setPassword('');
-      setPhone('');
-      setRole('STAFF');
-      setTitle('');
-      await qc.invalidateQueries({ queryKey: staffKeys.all });
-      await qc.invalidateQueries({ queryKey: ['staff'] });
-    } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Could not create user.'));
-    } finally {
-      setCreating(false);
-    }
-  };
+  const createFormik = useFormik({
+    initialValues: {
+      role: 'STAFF' as CreateSalonStaffRole,
+      fullName: '',
+      email: '',
+      password: '',
+      phone: '',
+      title: '',
+    },
+    validate: (values) => {
+      const errors: Record<string, string> = {};
+      if (!values.fullName.trim()) errors.fullName = 'Full name is required.';
+      if (!values.email.trim()) errors.email = 'Email is required.';
+      if (values.password.length < 8) errors.password = 'Password must be at least 8 characters.';
+      return errors;
+    },
+    onSubmit: async (values, helpers) => {
+      setActionError(null);
+      setCreating(true);
+      try {
+        await createStaffMember({
+          fullName: values.fullName.trim(),
+          email: values.email.trim(),
+          password: values.password,
+          phone: values.phone.trim() || undefined,
+          role: values.role,
+          title: values.role === 'STAFF' ? values.title.trim() || undefined : undefined,
+        });
+        setOpenCreate(false);
+        helpers.resetForm();
+        await qc.invalidateQueries({ queryKey: staffKeys.all });
+        await qc.invalidateQueries({ queryKey: ['staff'] });
+      } catch (err) {
+        setActionError(getApiErrorMessage(err, 'Could not create user.'));
+      } finally {
+        setCreating(false);
+      }
+    },
+  });
 
   const openEdit = (member: SalonStaffMember) => {
     setEditing(member);
-    setFullName(member.fullName);
-    setPhone(member.phone ?? '');
-    setRole(member.role as CreateSalonStaffRole);
-    setTitle(member.staffProfile?.title ?? '');
-    setAccountStatus((member.status as StaffUserStatus) || 'ACTIVE');
     setActionError(null);
   };
 
-  const submitEdit = async () => {
-    if (!editing) return;
-    setActionError(null);
-    if (!fullName.trim()) {
-      setActionError('Full name is required.');
-      return;
-    }
-    setUpdating(true);
-    try {
-      await updateStaffMember(editing.id, {
-        fullName: fullName.trim(),
-        phone: phone.trim() || null,
-        role,
-        title: role === 'STAFF' ? title.trim() || null : null,
-        status: accountStatus,
-      });
-      setEditing(null);
-      setFullName('');
-      setPhone('');
-      setRole('STAFF');
-      setTitle('');
-      await qc.invalidateQueries({ queryKey: staffKeys.all });
-      await qc.invalidateQueries({ queryKey: ['staff'] });
-    } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Could not update member.'));
-    } finally {
-      setUpdating(false);
-    }
-  };
+  const editFormik = useFormik({
+    enableReinitialize: true,
+    initialValues: {
+      role: (editing?.role as CreateSalonStaffRole) ?? 'STAFF',
+      fullName: editing?.fullName ?? '',
+      phone: editing?.phone ?? '',
+      title: editing?.staffProfile?.title ?? '',
+      accountStatus: ((editing?.status as StaffUserStatus) ?? 'ACTIVE') as StaffUserStatus,
+    },
+    validate: (values) => {
+      const errors: Record<string, string> = {};
+      if (!values.fullName.trim()) errors.fullName = 'Full name is required.';
+      return errors;
+    },
+    onSubmit: async (values) => {
+      if (!editing) return;
+      setActionError(null);
+      setUpdating(true);
+      try {
+        await updateStaffMember(editing.id, {
+          fullName: values.fullName.trim(),
+          phone: values.phone.trim() || null,
+          role: values.role,
+          title: values.role === 'STAFF' ? values.title.trim() || null : null,
+          status: values.accountStatus,
+        });
+        setEditing(null);
+        await qc.invalidateQueries({ queryKey: staffKeys.all });
+        await qc.invalidateQueries({ queryKey: ['staff'] });
+      } catch (err) {
+        setActionError(getApiErrorMessage(err, 'Could not update member.'));
+      } finally {
+        setUpdating(false);
+      }
+    },
+  });
 
   const confirmDeactivate = async () => {
     if (!deactivateTarget) return;
@@ -267,7 +270,14 @@ export default function StaffPage() {
         description="Create receptionists and stylists. Only a platform admin can add another salon admin."
         actions={
           canManage ? (
-            <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={() => setOpenCreate(true)}>
+            <Button
+              variant="contained"
+              startIcon={<AddRoundedIcon />}
+              onClick={() => {
+                createFormik.resetForm();
+                setOpenCreate(true);
+              }}
+            >
               Add team member
             </Button>
           ) : null
@@ -318,32 +328,66 @@ export default function StaffPage() {
         onClose={() => setOpenCreate(false)}
         title="Add team member"
         submitLabel="Create account"
-        onSubmit={submitCreate}
+        onSubmit={createFormik.submitForm}
         loading={creating}
       >
         <LabeledSelect
           label="Role"
-          value={role}
-          onChange={(e) => setRole(e.target.value as CreateSalonStaffRole)}
+          value={createFormik.values.role}
+          onChange={(e) => createFormik.setFieldValue('role', e.target.value as CreateSalonStaffRole)}
           options={roleChoices.map((o) => ({ value: o.value, label: o.label }))}
           required
         />
-        <LabeledTextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-        <LabeledTextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required type="email" />
+        <LabeledTextField
+          label="Full name"
+          name="fullName"
+          value={createFormik.values.fullName}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+          error={createFormik.touched.fullName && Boolean(createFormik.errors.fullName)}
+          helperText={createFormik.touched.fullName ? createFormik.errors.fullName : undefined}
+          required
+        />
+        <LabeledTextField
+          label="Email"
+          name="email"
+          value={createFormik.values.email}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+          error={createFormik.touched.email && Boolean(createFormik.errors.email)}
+          helperText={createFormik.touched.email ? createFormik.errors.email : undefined}
+          required
+          type="email"
+        />
         <LabeledTextField
           label="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          name="password"
+          value={createFormik.values.password}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+          error={createFormik.touched.password && Boolean(createFormik.errors.password)}
+          helperText={
+            createFormik.touched.password && createFormik.errors.password
+              ? createFormik.errors.password
+              : 'At least 8 characters. They will use this to sign in.'
+          }
           required
           type="password"
-          helperText="At least 8 characters. They will use this to sign in."
         />
-        <LabeledTextField label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        {role === 'STAFF' ? (
+        <LabeledTextField
+          label="Phone"
+          name="phone"
+          value={createFormik.values.phone}
+          onChange={createFormik.handleChange}
+          onBlur={createFormik.handleBlur}
+        />
+        {createFormik.values.role === 'STAFF' ? (
           <LabeledTextField
             label="Title (optional)"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            name="title"
+            value={createFormik.values.title}
+            onChange={createFormik.handleChange}
+            onBlur={createFormik.handleBlur}
             placeholder="e.g. Senior stylist"
           />
         ) : null}
@@ -354,30 +398,47 @@ export default function StaffPage() {
         onClose={() => setEditing(null)}
         title="Edit team member"
         submitLabel="Save changes"
-        onSubmit={submitEdit}
+        onSubmit={editFormik.submitForm}
         loading={updating}
       >
         <LabeledSelect
           label="Role"
-          value={role}
-          onChange={(e) => setRole(e.target.value as CreateSalonStaffRole)}
+          value={editFormik.values.role}
+          onChange={(e) => editFormik.setFieldValue('role', e.target.value as CreateSalonStaffRole)}
           options={roleChoices.map((o) => ({ value: o.value, label: o.label }))}
           required
         />
-        <LabeledTextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-        <LabeledTextField label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        {role === 'STAFF' ? (
+        <LabeledTextField
+          label="Full name"
+          name="fullName"
+          value={editFormik.values.fullName}
+          onChange={editFormik.handleChange}
+          onBlur={editFormik.handleBlur}
+          error={editFormik.touched.fullName && Boolean(editFormik.errors.fullName)}
+          helperText={editFormik.touched.fullName ? editFormik.errors.fullName : undefined}
+          required
+        />
+        <LabeledTextField
+          label="Phone"
+          name="phone"
+          value={editFormik.values.phone}
+          onChange={editFormik.handleChange}
+          onBlur={editFormik.handleBlur}
+        />
+        {editFormik.values.role === 'STAFF' ? (
           <LabeledTextField
             label="Title (optional)"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            name="title"
+            value={editFormik.values.title}
+            onChange={editFormik.handleChange}
+            onBlur={editFormik.handleBlur}
             placeholder="e.g. Senior stylist"
           />
         ) : null}
         <LabeledSelect
           label="Account status"
-          value={accountStatus}
-          onChange={(e) => setAccountStatus(e.target.value as StaffUserStatus)}
+          value={editFormik.values.accountStatus}
+          onChange={(e) => editFormik.setFieldValue('accountStatus', e.target.value as StaffUserStatus)}
           options={STAFF_USER_STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
           required
         />
