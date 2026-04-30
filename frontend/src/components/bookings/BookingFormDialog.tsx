@@ -1,21 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Autocomplete,
   Button,
   Checkbox,
   Chip,
+  CircularProgress,
   FormControl,
   InputLabel,
   ListItemText,
   MenuItem,
   OutlinedInput,
   Select,
+  TextField,
   type SelectChangeEvent,
   Stack,
   Typography,
 } from '@mui/material';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useFormik } from 'formik';
+import { useQuery } from '@tanstack/react-query';
 
 import { AppDateTimePicker } from '@/components/ui/AppDateTimePicker';
 import { FormDialog } from '@/components/ui/FormDialog';
@@ -43,6 +47,8 @@ type Props = {
   onCustomerCreated: () => void;
 };
 
+type CustomersResponse = CustomerSummary[] | { items?: CustomerSummary[] };
+
 export function BookingFormDialog({
   open,
   onClose,
@@ -63,6 +69,7 @@ export function BookingFormDialog({
 
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
   const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
 
   const isEdit = Boolean(initial);
 
@@ -78,7 +85,7 @@ export function BookingFormDialog({
           notes: initial.notes ?? '',
         }
       : {
-          customerId: isCustomer ? '' : customers[0]?.id ?? '',
+          customerId: '',
           staffId: '',
           serviceIds: services[0] ? [services[0].id] : [],
           status: 'PENDING',
@@ -154,11 +161,35 @@ export function BookingFormDialog({
   useEffect(() => {
     if (!open) return;
     setError(null);
+    setCustomerSearch('');
   }, [open]);
 
+  const searchedCustomersQuery = useQuery({
+    queryKey: ['booking-customers-search', customerSearch],
+    queryFn: async () => {
+      const q = customerSearch.trim();
+      const { data } = await api.get<CustomersResponse>('/customers', {
+        params: {
+          q: q || undefined,
+          page: 1,
+          pageSize: 20,
+        },
+      });
+      return Array.isArray(data) ? data : data.items ?? [];
+    },
+    enabled: open && !isCustomer,
+  });
+
+  const mergedCustomers = useMemo(() => {
+    const map = new Map<string, CustomerSummary>();
+    for (const c of customers) map.set(c.id, c);
+    for (const c of searchedCustomersQuery.data ?? []) map.set(c.id, c);
+    return Array.from(map.values());
+  }, [customers, searchedCustomersQuery.data]);
+
   const customerOptions: LabeledSelectOption[] = useMemo(
-    () => customers.map((c) => ({ value: c.id, label: `${c.fullName} · ${c.phone}` })),
-    [customers],
+    () => mergedCustomers.map((c) => ({ value: c.id, label: `${c.fullName} · ${c.phone}` })),
+    [mergedCustomers],
   );
 
   const staffOptions: LabeledSelectOption[] = useMemo(
@@ -208,15 +239,34 @@ export function BookingFormDialog({
                 New customer
               </Button>
             </Stack>
-            <LabeledSelect
-              label="Customer"
-              value={formik.values.customerId}
-              onChange={(e) => formik.setFieldValue('customerId', e.target.value)}
+            <Autocomplete
               options={customerOptions}
               disabled={isEdit}
-              required
-              error={formik.touched.customerId && Boolean(formik.errors.customerId)}
-              helperText={formik.touched.customerId ? formik.errors.customerId : undefined}
+              loading={searchedCustomersQuery.isLoading}
+              value={customerOptions.find((x) => x.value === formik.values.customerId) ?? null}
+              onChange={(_event, option) => formik.setFieldValue('customerId', option?.value ?? '')}
+              onInputChange={(_event, value) => setCustomerSearch(value)}
+              onBlur={() => formik.setFieldTouched('customerId', true)}
+              isOptionEqualToValue={(option, value) => option.value === value.value}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Customer"
+                  placeholder="Search customer by name or phone"
+                  required
+                  error={formik.touched.customerId && Boolean(formik.errors.customerId)}
+                  helperText={formik.touched.customerId ? formik.errors.customerId : undefined}
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {searchedCustomersQuery.isLoading ? <CircularProgress color="inherit" size={16} /> : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
             />
           </>
         ) : (
