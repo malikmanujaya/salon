@@ -1,6 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 
-import type { RequestUser } from '../auth/decorators/current-user.decorator';
+import type { RequestUser } from './auth/types/request-user.type';
 
 export function requireSalonId(user: RequestUser): string {
   if (!user.salonId) {
@@ -10,3 +10,4 @@ export function requireSalonId(user: RequestUser): string {
   }
   return user.salonId;
 }
+
