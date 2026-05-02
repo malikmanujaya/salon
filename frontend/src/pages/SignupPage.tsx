@@ -45,7 +45,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate(user.role === 'CUSTOMER' ? '/dashboard/bookings' : '/dashboard', { replace: true });
+      navigate(user.role === 'CUSTOMER' ? '/bookings' : '/overview', { replace: true });
     }
   }, [authLoading, user, navigate]);
 
@@ -77,7 +77,7 @@ export default function SignupPage() {
         phone: phone.trim(),
         remember,
       });
-      navigate(created.role === 'CUSTOMER' ? '/dashboard/bookings' : '/dashboard', { replace: true });
+      navigate(created.role === 'CUSTOMER' ? '/bookings' : '/overview', { replace: true });
     } catch (err) {
       setError(getApiErrorMessage(err, 'Unable to create account.'));
     } finally {

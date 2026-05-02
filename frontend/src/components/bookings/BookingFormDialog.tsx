@@ -1,20 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Autocomplete,
   Button,
   Checkbox,
   Chip,
+  CircularProgress,
   FormControl,
   InputLabel,
   ListItemText,
   MenuItem,
   OutlinedInput,
   Select,
+  TextField,
   type SelectChangeEvent,
   Stack,
   Typography,
 } from '@mui/material';
 import dayjs, { type Dayjs } from 'dayjs';
+import { useFormik } from 'formik';
+import { useQuery } from '@tanstack/react-query';
 
 import { AppDateTimePicker } from '@/components/ui/AppDateTimePicker';
 import { FormDialog } from '@/components/ui/FormDialog';
@@ -42,6 +47,8 @@ type Props = {
   onCustomerCreated: () => void;
 };
 
+type CustomersResponse = CustomerSummary[] | { items?: CustomerSummary[] };
+
 export function BookingFormDialog({
   open,
   onClose,
@@ -57,50 +64,132 @@ export function BookingFormDialog({
   const { user } = useAuth();
   const isCustomer = user?.role === 'CUSTOMER';
 
-  const [customerId, setCustomerId] = useState('');
-  const [staffId, setStaffId] = useState('');
-  const [serviceIds, setServiceIds] = useState<string[]>([]);
-  const [status, setStatus] = useState('PENDING');
-  const [start, setStart] = useState<Dayjs | null>(null);
-  const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newPhone, setNewPhone] = useState('');
   const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
 
   const isEdit = Boolean(initial);
+
+  const formik = useFormik({
+    enableReinitialize: true,
+    initialValues: initial
+      ? {
+          customerId: initial.customerId,
+          staffId: initial.staffId ?? '',
+          serviceIds: initial.services.map((s) => s.serviceId),
+          status: initial.status,
+          start: dayjs(initial.startTime) as Dayjs | null,
+          notes: initial.notes ?? '',
+        }
+      : {
+          customerId: '',
+          staffId: '',
+          serviceIds: services[0] ? [services[0].id] : [],
+          status: 'PENDING',
+          start: roundToNextQuarter(dayjs(defaultStart ?? new Date())) as Dayjs | null,
+          notes: '',
+        },
+    validate: (values) => {
+      const errors: Record<string, string> = {};
+      if (!isCustomer && !values.customerId) errors.customerId = 'Select a customer.';
+      if (!values.serviceIds.length) errors.serviceIds = 'Select at least one service.';
+      if (!values.start || !values.start.isValid()) errors.start = 'Pick a valid start date and time.';
+      return errors;
+    },
+    onSubmit: async (values) => {
+      setError(null);
+      const startIso = values.start!.toDate().toISOString();
+      setLoading(true);
+      try {
+        if (initial) {
+          await api.patch<BookingDetail>(`/bookings/${initial.id}`, {
+            startTime: startIso,
+            serviceIds: values.serviceIds,
+            staffId: values.staffId || null,
+            notes: values.notes.trim() || null,
+            ...(canManageStatus ? { status: values.status } : {}),
+          });
+        } else {
+          await api.post<BookingDetail>('/bookings', {
+            ...(isCustomer ? {} : { customerId: values.customerId }),
+            startTime: startIso,
+            serviceIds: values.serviceIds,
+            staffId: values.staffId || undefined,
+            notes: values.notes.trim() || undefined,
+          });
+        }
+        onSaved();
+        onClose();
+      } catch (err) {
+        setError(getApiErrorMessage(err, 'Could not save booking.'));
+      } finally {
+        setLoading(false);
+      }
+    },
+  });
+
+  const addCustomerFormik = useFormik({
+    initialValues: { fullName: '', phone: '' },
+    validate: (values) => {
+      const errors: Record<string, string> = {};
+      if (!values.fullName.trim()) errors.fullName = 'Full name is required.';
+      if (!values.phone.trim()) errors.phone = 'Phone is required.';
+      return errors;
+    },
+    onSubmit: async (values, helpers) => {
+      setCreatingCustomer(true);
+      try {
+        const { data } = await api.post<CustomerSummary>('/customers', {
+          fullName: values.fullName.trim(),
+          phone: values.phone.trim(),
+        });
+        onCustomerCreated();
+        formik.setFieldValue('customerId', data.id);
+        setAddCustomerOpen(false);
+        helpers.resetForm();
+      } catch (err) {
+        setError(getApiErrorMessage(err, 'Could not create customer.'));
+      } finally {
+        setCreatingCustomer(false);
+      }
+    },
+  });
 
   useEffect(() => {
     if (!open) return;
     setError(null);
-    if (initial) {
-      setCustomerId(initial.customerId);
-      setStaffId(initial.staffId ?? '');
-      setServiceIds(initial.services.map((s) => s.serviceId));
-      setStatus(initial.status);
-      setStart(dayjs(initial.startTime));
-      setNotes(initial.notes ?? '');
-    } else {
-      const startDate = defaultStart ?? new Date();
-      if (!isCustomer) {
-        setCustomerId(customers[0]?.id ?? '');
-      } else {
-        setCustomerId('');
-      }
-      setStaffId('');
-      setServiceIds(services[0] ? [services[0].id] : []);
-      setStatus('PENDING');
-      setStart(roundToNextQuarter(dayjs(startDate)));
-      setNotes('');
-    }
-  }, [open, initial, defaultStart, customers, services, isCustomer]);
+    setCustomerSearch('');
+  }, [open]);
+
+  const searchedCustomersQuery = useQuery({
+    queryKey: ['booking-customers-search', customerSearch],
+    queryFn: async () => {
+      const q = customerSearch.trim();
+      const { data } = await api.get<CustomersResponse>('/customers', {
+        params: {
+          q: q || undefined,
+          page: 1,
+          pageSize: 20,
+        },
+      });
+      return Array.isArray(data) ? data : data.items ?? [];
+    },
+    enabled: open && !isCustomer,
+  });
+
+  const mergedCustomers = useMemo(() => {
+    const map = new Map<string, CustomerSummary>();
+    for (const c of customers) map.set(c.id, c);
+    for (const c of searchedCustomersQuery.data ?? []) map.set(c.id, c);
+    return Array.from(map.values());
+  }, [customers, searchedCustomersQuery.data]);
 
   const customerOptions: LabeledSelectOption[] = useMemo(
-    () => customers.map((c) => ({ value: c.id, label: `${c.fullName} · ${c.phone}` })),
-    [customers],
+    () => mergedCustomers.map((c) => ({ value: c.id, label: `${c.fullName} · ${c.phone}` })),
+    [mergedCustomers],
   );
 
   const staffOptions: LabeledSelectOption[] = useMemo(
@@ -113,70 +202,7 @@ export function BookingFormDialog({
 
   const handleServiceChange = (e: SelectChangeEvent<string[]>) => {
     const v = e.target.value;
-    setServiceIds(typeof v === 'string' ? v.split(',') : v);
-  };
-
-  const submit = async () => {
-    setError(null);
-    if (!isCustomer && !customerId) {
-      setError('Select a customer.');
-      return;
-    }
-    if (!serviceIds.length) {
-      setError('Select at least one service.');
-      return;
-    }
-    if (!start || !start.isValid()) {
-      setError('Pick a valid start date and time.');
-      return;
-    }
-    const startIso = start.toDate().toISOString();
-
-    setLoading(true);
-    try {
-      if (initial) {
-        await api.patch<BookingDetail>(`/bookings/${initial.id}`, {
-          startTime: startIso,
-          serviceIds,
-          staffId: staffId || null,
-          notes: notes.trim() || null,
-          ...(canManageStatus ? { status } : {}),
-        });
-      } else {
-        await api.post<BookingDetail>('/bookings', {
-          ...(isCustomer ? {} : { customerId }),
-          startTime: startIso,
-          serviceIds,
-          staffId: staffId || undefined,
-          notes: notes.trim() || undefined,
-        });
-      }
-      onSaved();
-      onClose();
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'Could not save booking.'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createCustomer = async () => {
-    setCreatingCustomer(true);
-    try {
-      const { data } = await api.post<CustomerSummary>('/customers', {
-        fullName: newName.trim(),
-        phone: newPhone.trim(),
-      });
-      onCustomerCreated();
-      setCustomerId(data.id);
-      setAddCustomerOpen(false);
-      setNewName('');
-      setNewPhone('');
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'Could not create customer.'));
-    } finally {
-      setCreatingCustomer(false);
-    }
+    formik.setFieldValue('serviceIds', typeof v === 'string' ? v.split(',') : v);
   };
 
   return (
@@ -192,7 +218,7 @@ export function BookingFormDialog({
               ? `Book a service at ${SALON_DISPLAY_NAME} — you are booked as yourself.`
               : 'Choose customer, services, and time.'
         }
-        onSubmit={submit}
+        onSubmit={formik.submitForm}
         loading={loading}
         submitLabel={isEdit ? 'Save changes' : 'Create booking'}
         maxWidth="sm"
@@ -213,13 +239,34 @@ export function BookingFormDialog({
                 New customer
               </Button>
             </Stack>
-            <LabeledSelect
-              label="Customer"
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
+            <Autocomplete
               options={customerOptions}
               disabled={isEdit}
-              required
+              loading={searchedCustomersQuery.isLoading}
+              value={customerOptions.find((x) => x.value === formik.values.customerId) ?? null}
+              onChange={(_event, option) => formik.setFieldValue('customerId', option?.value ?? '')}
+              onInputChange={(_event, value) => setCustomerSearch(value)}
+              onBlur={() => formik.setFieldTouched('customerId', true)}
+              isOptionEqualToValue={(option, value) => option.value === value.value}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Customer"
+                  placeholder="Search customer by name or phone"
+                  required
+                  error={formik.touched.customerId && Boolean(formik.errors.customerId)}
+                  helperText={formik.touched.customerId ? formik.errors.customerId : undefined}
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {searchedCustomersQuery.isLoading ? <CircularProgress color="inherit" size={16} /> : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
             />
           </>
         ) : (
@@ -228,14 +275,19 @@ export function BookingFormDialog({
           </Typography>
         )}
 
-        <LabeledSelect label="Stylist" value={staffId} onChange={(e) => setStaffId(e.target.value)} options={staffOptions} />
+        <LabeledSelect
+          label="Stylist"
+          value={formik.values.staffId}
+          onChange={(e) => formik.setFieldValue('staffId', e.target.value)}
+          options={staffOptions}
+        />
 
         {isEdit ? (
           canManageStatus ? (
             <LabeledSelect
               label="Status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              value={formik.values.status}
+              onChange={(e) => formik.setFieldValue('status', e.target.value)}
               options={[
                 { value: 'PENDING', label: 'PENDING' },
                 { value: 'CONFIRMED', label: 'CONFIRMED' },
@@ -250,7 +302,7 @@ export function BookingFormDialog({
               <Typography variant="subtitle2" color="text.secondary">
                 Status
               </Typography>
-              <Chip label={status} size="small" variant="outlined" sx={{ alignSelf: 'flex-start' }} />
+              <Chip label={formik.values.status} size="small" variant="outlined" sx={{ alignSelf: 'flex-start' }} />
             </Stack>
           )
         ) : null}
@@ -262,7 +314,7 @@ export function BookingFormDialog({
           <Select<string[]>
             labelId="svc-label"
             multiple
-            value={serviceIds}
+            value={formik.values.serviceIds}
             onChange={handleServiceChange}
             input={<OutlinedInput label="Services" />}
             renderValue={(selected) =>
@@ -274,7 +326,7 @@ export function BookingFormDialog({
           >
             {services.map((s) => (
               <MenuItem key={s.id} value={s.id}>
-                <Checkbox checked={serviceIds.includes(s.id)} />
+                <Checkbox checked={formik.values.serviceIds.includes(s.id)} />
                 <ListItemText primary={s.name} secondary={`${s.durationMinutes} min`} />
               </MenuItem>
             ))}
@@ -283,13 +335,25 @@ export function BookingFormDialog({
 
         <AppDateTimePicker
           label="Start"
-          value={start}
-          onChange={(value) => setStart(value)}
+          value={formik.values.start}
+          onChange={(value) => formik.setFieldValue('start', value)}
           required
-          helperText={start ? `Booking begins ${start.format('dddd, MMM D · h:mm A')}` : ' '}
+          helperText={
+            formik.values.start
+              ? `Booking begins ${formik.values.start.format('dddd, MMM D · h:mm A')}`
+              : formik.errors.start || ' '
+          }
         />
 
-        <LabeledTextField label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} multiline minRows={2} />
+        <LabeledTextField
+          label="Notes"
+          name="notes"
+          value={formik.values.notes}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          multiline
+          minRows={2}
+        />
       </FormDialog>
 
       {!isCustomer ? (
@@ -298,11 +362,29 @@ export function BookingFormDialog({
           onClose={() => setAddCustomerOpen(false)}
           title="New customer"
           submitLabel="Add customer"
-          onSubmit={createCustomer}
+          onSubmit={addCustomerFormik.submitForm}
           loading={creatingCustomer}
         >
-          <LabeledTextField label="Full name" value={newName} onChange={(e) => setNewName(e.target.value)} required />
-          <LabeledTextField label="Phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} required />
+          <LabeledTextField
+            label="Full name"
+            name="fullName"
+            value={addCustomerFormik.values.fullName}
+            onChange={addCustomerFormik.handleChange}
+            onBlur={addCustomerFormik.handleBlur}
+            error={addCustomerFormik.touched.fullName && Boolean(addCustomerFormik.errors.fullName)}
+            helperText={addCustomerFormik.touched.fullName ? addCustomerFormik.errors.fullName : undefined}
+            required
+          />
+          <LabeledTextField
+            label="Phone"
+            name="phone"
+            value={addCustomerFormik.values.phone}
+            onChange={addCustomerFormik.handleChange}
+            onBlur={addCustomerFormik.handleBlur}
+            error={addCustomerFormik.touched.phone && Boolean(addCustomerFormik.errors.phone)}
+            helperText={addCustomerFormik.touched.phone ? addCustomerFormik.errors.phone : undefined}
+            required
+          />
         </CreateModal>
       ) : null}
     </>

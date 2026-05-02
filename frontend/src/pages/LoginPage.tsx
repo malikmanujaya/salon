@@ -29,7 +29,7 @@ import { elevationShadow, gradients, palette } from '@/theme/palette';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
+  const from = (location.state as { from?: string } | null)?.from ?? '/overview';
   const { user, loading: authLoading, login } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -241,7 +241,7 @@ export default function LoginPage() {
                   }
                   label="Stay signed in"
                 />
-                <Link href="#" variant="body2" fontWeight={600} underline="hover">
+                <Link component={RouterLink} to="/forgot-password" variant="body2" fontWeight={600} underline="hover">
                   Forgot password?
                 </Link>
               </Stack>

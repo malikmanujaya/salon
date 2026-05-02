@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { configValidationSchema, configFactory } from './config/configuration';
+import { LoggingModule } from './common/logging/logging.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
-import { AuthModule } from './auth/auth.module';
-import { BookingsModule } from './bookings/bookings.module';
-import { CustomersModule } from './customers/customers.module';
-import { SalonServicesModule } from './salon-services/salon-services.module';
-import { StaffModule } from './staff/staff.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { BookingsModule } from './modules/bookings/bookings.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { SalonServicesModule } from './modules/salon-services/salon-services.module';
+import { StaffModule } from './modules/staff/staff.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { StaffModule } from './staff/staff.module';
       load: [configFactory],
       validate: configValidationSchema,
     }),
+    LoggingModule,
     PrismaModule,
     HealthModule,
     AuthModule,
@@ -28,3 +30,4 @@ import { StaffModule } from './staff/staff.module';
   ],
 })
 export class AppModule {}
+

@@ -34,7 +34,6 @@ import type { SvgIconComponent } from '@mui/icons-material';
 
 import { useAuth } from '../context/AuthContext';
 import { BrandLogo, BrandLogoNavLink } from '@/components/brand/BrandLogo';
-import { SALON_DISPLAY_NAME } from '@/constants/display';
 import { palette } from '@/theme/palette';
 
 const STORAGE_KEY = 'lumora_sidebar_collapsed';
@@ -61,43 +60,60 @@ type NavLinkItem = {
 
 type NavEntry = NavLinkItem | NavGroup;
 
+function roleLabel(role?: string) {
+  switch (role) {
+    case 'SUPER_ADMIN':
+      return 'Super Admin';
+    case 'SALON_OWNER':
+      return 'Salon Admin';
+    case 'RECEPTIONIST':
+      return 'Receptionist';
+    case 'STAFF':
+      return 'Staff';
+    case 'CUSTOMER':
+      return 'Customer';
+    default:
+      return role ?? 'User';
+  }
+}
+
 const NAV: NavEntry[] = [
-  { type: 'link', to: '/dashboard', label: 'Overview', icon: DashboardRoundedIcon, end: true },
+  { type: 'link', to: '/overview', label: 'Overview', icon: DashboardRoundedIcon, end: true },
   {
     type: 'group',
     key: 'bookings',
     label: 'Bookings',
     icon: EventAvailableRoundedIcon,
     children: [
-      { to: '/dashboard/bookings', label: 'All bookings', exact: true },
-      { to: '/dashboard/bookings/calendar', label: 'Calendar' },
+      { to: '/bookings', label: 'All bookings', exact: true },
+      { to: '/calendar', label: 'Calendar' },
     ],
   },
-  { type: 'link', to: '/dashboard/customers', label: 'Customers', icon: GroupsRoundedIcon },
-  { type: 'link', to: '/dashboard/staff', label: 'Staff', icon: PersonPinRoundedIcon },
-  { type: 'link', to: '/dashboard/services', label: 'Services', icon: StyleRoundedIcon },
+  { type: 'link', to: '/customers', label: 'Customers', icon: GroupsRoundedIcon },
+  { type: 'link', to: '/staff', label: 'Staff', icon: PersonPinRoundedIcon },
+  { type: 'link', to: '/services', label: 'Services', icon: StyleRoundedIcon },
   {
     type: 'group',
     key: 'settings',
     label: 'Settings',
     icon: SettingsRoundedIcon,
     children: [
-      { to: '/dashboard/settings/profile', label: 'Profile' },
+      { to: '/settings/profile', label: 'Profile' },
     ],
   },
 ];
 
 /** Salon customers: bookings only (single-salon model; no branch or CRM navigation). */
 const CUSTOMER_NAV: NavEntry[] = [
-  { type: 'link', to: '/dashboard', label: 'Home', icon: DashboardRoundedIcon, end: true },
+  { type: 'link', to: '/overview', label: 'Home', icon: DashboardRoundedIcon, end: true },
   {
     type: 'group',
     key: 'bookings',
     label: 'Bookings',
     icon: EventAvailableRoundedIcon,
     children: [
-      { to: '/dashboard/bookings', label: 'All bookings', exact: true },
-      { to: '/dashboard/bookings/calendar', label: 'Calendar' },
+      { to: '/bookings', label: 'All bookings', exact: true },
+      { to: '/calendar', label: 'Calendar' },
     ],
   },
 ];
@@ -117,13 +133,13 @@ function groupActive(pathname: string, children: NavChild[]): boolean {
 }
 
 function getDashboardPageTitle(pathname: string, isCustomer: boolean): string {
-  if (pathname.startsWith('/dashboard/settings/profile')) return 'Profile';
-  if (pathname.startsWith('/dashboard/bookings/calendar')) return 'Calendar';
-  if (pathname.startsWith('/dashboard/bookings')) return 'All bookings';
-  if (pathname.startsWith('/dashboard/customers')) return 'Customers';
-  if (pathname.startsWith('/dashboard/staff')) return 'Staff';
-  if (pathname.startsWith('/dashboard/services')) return 'Services';
-  if (pathname === '/dashboard' || pathname === '/dashboard/') return isCustomer ? 'Home' : 'Overview';
+  if (pathname.startsWith('/settings/profile')) return 'Profile';
+  if (pathname.startsWith('/calendar')) return 'Calendar';
+  if (pathname.startsWith('/bookings')) return 'All bookings';
+  if (pathname.startsWith('/customers')) return 'Customers';
+  if (pathname.startsWith('/staff')) return 'Staff';
+  if (pathname.startsWith('/services')) return 'Services';
+  if (pathname === '/overview' || pathname === '/overview/') return isCustomer ? 'Home' : 'Overview';
   return 'Dashboard';
 }
 
@@ -237,7 +253,7 @@ export default function DashboardLayout() {
       const expanded = openGroups[group.key] ?? active;
 
       if (collapsed && mdUp) {
-        const first = group.children[0]?.to ?? '/dashboard';
+        const first = group.children[0]?.to ?? '/overview';
         const btn = (
           <ListItemButton
             key={group.key}
@@ -337,13 +353,13 @@ export default function DashboardLayout() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: collapsed && mdUp ? 'center' : 'stretch',
-          minHeight: collapsed && mdUp ? 88 : 96,
+          minHeight: collapsed && mdUp ? 88 : 108,
           justifyContent: 'center',
         }}
       >
         <Box
           component={RouterLink}
-          to="/dashboard"
+          to="/overview"
           onClick={() => setMobileOpen(false)}
           sx={{
             textDecoration: 'none',
@@ -361,40 +377,9 @@ export default function DashboardLayout() {
               </Box>
             </Tooltip>
           ) : (
-            <>
-              <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                <BrandLogo variant="sidebar-expanded" />
-              </Box>
-              <Box
-                sx={{
-                  mt: 1.1,
-                  px: 1.25,
-                  py: 0.6,
-                  borderRadius: 999,
-                  border: `1px solid ${alpha(palette.purpleDeep, 0.12)}`,
-                  bgcolor: alpha(palette.white, 0.66),
-                  maxWidth: '100%',
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: 'block',
-                    fontWeight: 700,
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    color: alpha(palette.purpleDeep, 0.74),
-                  }}
-                  noWrap
-                >
-                  {user?.role === 'SUPER_ADMIN'
-                    ? 'Platform · all salons'
-                    : user?.role === 'CUSTOMER'
-                      ? SALON_DISPLAY_NAME
-                      : (user?.salon?.name ?? SALON_DISPLAY_NAME)}
-                </Typography>
-              </Box>
-            </>
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <BrandLogo variant="sidebar-expanded" />
+            </Box>
           )}
         </Box>
       </Box>
@@ -423,7 +408,7 @@ export default function DashboardLayout() {
           <IconButton color="inherit" edge="start" onClick={() => setMobileOpen(true)} aria-label="open menu">
             <MenuRoundedIcon />
           </IconButton>
-          <BrandLogoNavLink to="/dashboard" onClick={() => setMobileOpen(false)} compact />
+          <BrandLogoNavLink to="/overview" onClick={() => setMobileOpen(false)} compact />
         </Toolbar>
       </Box>
 
@@ -516,7 +501,7 @@ export default function DashboardLayout() {
                 {user?.fullName}
               </Typography>
               <Typography variant="caption" color="text.secondary" noWrap display="block">
-                {user?.email}
+                {roleLabel(user?.role)}
               </Typography>
             </Box>
             <ListItemButton
@@ -533,10 +518,10 @@ export default function DashboardLayout() {
               <ListItemIcon sx={{ minWidth: 30, justifyContent: 'center', color: 'inherit' }}>
                 <LogoutRoundedIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText
+              {/* <ListItemText
                 primary="Sign out"
                 primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap' }}
-              />
+              /> */}
             </ListItemButton>
           </Box>
         </Box>

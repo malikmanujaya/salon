@@ -20,6 +20,9 @@ import { RegisterDto } from './dto/register.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
 
 const BCRYPT_ROUNDS = 12;
+const OTP_EXPIRES_MINUTES = 10;
+const OTP_MAX_ATTEMPTS = 5;
+const PASSWORD_RESET_TOKEN_EXPIRES = '15m';
 
 @Injectable()
 export class AuthService {
@@ -31,6 +34,61 @@ export class AuthService {
 
   private get jwtOpts() {
     return this.config.get('jwt', { infer: true })!;
+  }
+
+  private get smsOpts() {
+    return this.config.get('sms', { infer: true })!;
+  }
+
+  private normalizePhoneForLk(value: string): string {
+    const digits = value.replace(/[^\d]/g, '');
+    if (digits.startsWith('94')) return digits;
+    if (digits.startsWith('0')) return `94${digits.slice(1)}`;
+    return digits;
+  }
+
+  private async sendNotifySms(to: string, message: string): Promise<void> {
+    const sms = this.smsOpts;
+    if (!sms.userId || !sms.apiKey || !sms.senderId) {
+      throw new BadRequestException('SMS service is not configured.');
+    }
+
+    const params = new URLSearchParams({
+      user_id: sms.userId,
+      api_key: sms.apiKey,
+      sender_id: sms.senderId,
+      to,
+      message,
+    });
+
+    const res = await fetch(`https://app.notify.lk/api/v1/send?${params.toString()}`, {
+      method: 'GET',
+    });
+
+    if (!res.ok) {
+      throw new BadRequestException('Failed to send OTP SMS.');
+    }
+  }
+
+  private signPasswordResetToken(userId: string, phone: string): string {
+    return this.jwt.sign(
+      { sub: userId, phone, typ: 'password_reset' },
+      { secret: this.jwtOpts.accessSecret, expiresIn: PASSWORD_RESET_TOKEN_EXPIRES },
+    );
+  }
+
+  private verifyPasswordResetToken(token: string): { sub: string; phone: string; typ?: string } {
+    try {
+      const payload = this.jwt.verify<{ sub: string; phone: string; typ?: string }>(token, {
+        secret: this.jwtOpts.accessSecret,
+      });
+      if (payload.typ !== 'password_reset') {
+        throw new UnauthorizedException('Invalid reset token.');
+      }
+      return payload;
+    } catch {
+      throw new UnauthorizedException('Invalid or expired reset token.');
+    }
   }
 
   private signAccess(user: { id: string; email: string; role: string }): string {
@@ -213,6 +271,127 @@ export class AuthService {
       refreshToken: this.signRefresh(publicUser.id),
       user: publicUser,
     };
+  }
+
+  async requestPasswordResetOtp(phoneInput: string) {
+    const normalized = this.normalizePhoneForLk(phoneInput);
+    const target = await this.prisma.user.findFirst({
+      where: { phone: { in: [phoneInput.trim(), normalized, `+${normalized}`] } },
+      select: { id: true, phone: true, status: true },
+    });
+
+    if (!target || !target.phone) {
+      throw new BadRequestException('Phone number is not registered.');
+    }
+    if (target.status !== 'ACTIVE') {
+      throw new BadRequestException('This account cannot reset password right now.');
+    }
+
+    await this.prisma.passwordResetOtp.updateMany({
+      where: { userId: target.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const codeHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
+    const expiresAt = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
+
+    await this.prisma.passwordResetOtp.create({
+      data: {
+        userId: target.id,
+        phone: this.normalizePhoneForLk(target.phone),
+        codeHash,
+        expiresAt,
+        maxAttempts: OTP_MAX_ATTEMPTS,
+      },
+    });
+
+    await this.sendNotifySms(
+      this.normalizePhoneForLk(target.phone),
+      `Your password reset OTP is ${otp}. It expires in ${OTP_EXPIRES_MINUTES} minutes.`,
+    );
+
+    return { ok: true, message: 'OTP sent successfully.' };
+  }
+
+  async verifyPasswordResetOtp(phoneInput: string, otp: string) {
+    const normalized = this.normalizePhoneForLk(phoneInput);
+    const row = await this.prisma.passwordResetOtp.findFirst({
+      where: {
+        phone: { in: [normalized, phoneInput.trim(), `+${normalized}`] },
+        usedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { id: true, phone: true, status: true } } },
+    });
+
+    if (!row || !row.user || row.user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Invalid or expired OTP.');
+    }
+
+    if (row.expiresAt.getTime() < Date.now()) {
+      await this.prisma.passwordResetOtp.update({
+        where: { id: row.id },
+        data: { usedAt: new Date() },
+      });
+      throw new UnauthorizedException('Invalid or expired OTP.');
+    }
+
+    if (row.attempts >= row.maxAttempts) {
+      await this.prisma.passwordResetOtp.update({
+        where: { id: row.id },
+        data: { usedAt: new Date() },
+      });
+      throw new UnauthorizedException('Invalid or expired OTP.');
+    }
+
+    const ok = await bcrypt.compare(otp, row.codeHash);
+    if (!ok) {
+      await this.prisma.passwordResetOtp.update({
+        where: { id: row.id },
+        data: { attempts: row.attempts + 1 },
+      });
+      throw new UnauthorizedException('Invalid or expired OTP.');
+    }
+
+    await this.prisma.passwordResetOtp.update({
+      where: { id: row.id },
+      data: { usedAt: new Date() },
+    });
+
+    return {
+      resetToken: this.signPasswordResetToken(row.user.id, this.normalizePhoneForLk(row.user.phone ?? normalized)),
+    };
+  }
+
+  async resetPasswordWithOtp(phoneInput: string, resetToken: string, newPassword: string) {
+    const payload = this.verifyPasswordResetToken(resetToken);
+    const normalized = this.normalizePhoneForLk(phoneInput);
+    if (this.normalizePhoneForLk(payload.phone) !== normalized) {
+      throw new UnauthorizedException('Invalid reset token.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, phone: true, status: true },
+    });
+    if (!user || !user.phone || this.normalizePhoneForLk(user.phone) !== normalized) {
+      throw new UnauthorizedException('Invalid reset token.');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordResetOtp.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { ok: true };
   }
 
   async me(user: RequestUser): Promise<RequestUser> {

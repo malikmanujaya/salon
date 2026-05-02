@@ -90,7 +90,7 @@ export default function Navbar() {
               sx={{ display: { xs: 'none', md: 'flex' } }}
             >
               {!authLoading && user ? (
-                <Button component={RouterLink} to="/dashboard" variant="contained" color="primary">
+                <Button component={RouterLink} to="/overview" variant="contained" color="primary">
                   Dashboard
                 </Button>
               ) : !authLoading ? (
@@ -170,7 +170,7 @@ export default function Navbar() {
           {!authLoading && user ? (
             <Button
               component={RouterLink}
-              to="/dashboard"
+              to="/overview"
               variant="contained"
               color="primary"
               fullWidth

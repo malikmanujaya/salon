@@ -2,6 +2,9 @@ import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser, type RequestUser } from './decorators/current-user.decorator';
+import { ForgotPasswordRequestDto } from './dto/forgot-password-request.dto';
+import { ForgotPasswordResetDto } from './dto/forgot-password-reset.dto';
+import { ForgotPasswordVerifyDto } from './dto/forgot-password-verify.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -30,6 +33,24 @@ export class AuthController {
   @ApiOperation({ summary: 'Issue a new access token' })
   refresh(@Body() dto: RefreshDto) {
     return this.auth.refresh(dto.refreshToken);
+  }
+
+  @Post('forgot-password/request-otp')
+  @ApiOperation({ summary: 'Request OTP to reset password via SMS' })
+  forgotPasswordRequestOtp(@Body() dto: ForgotPasswordRequestDto) {
+    return this.auth.requestPasswordResetOtp(dto.phone);
+  }
+
+  @Post('forgot-password/verify-otp')
+  @ApiOperation({ summary: 'Verify OTP and receive reset token' })
+  forgotPasswordVerifyOtp(@Body() dto: ForgotPasswordVerifyDto) {
+    return this.auth.verifyPasswordResetOtp(dto.phone, dto.otp);
+  }
+
+  @Post('forgot-password/reset')
+  @ApiOperation({ summary: 'Reset password using verified reset token' })
+  forgotPasswordReset(@Body() dto: ForgotPasswordResetDto) {
+    return this.auth.resetPasswordWithOtp(dto.phone, dto.resetToken, dto.newPassword);
   }
 
   @Get('me')
