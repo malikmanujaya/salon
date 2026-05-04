@@ -173,10 +173,13 @@ export function AppDataTable<Row extends { id: string | number }>({
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
 
   useEffect(() => {
+    // Avoid clamping while loading: server `total` can be missing for one render (e.g. paginated React Query gap),
+    // which would make totalPages=1 and incorrectly reset a valid page>1.
+    if (loading) return;
     if (page > totalPages) {
       setPage(totalPages);
     }
-  }, [page, setPage, totalPages]);
+  }, [page, setPage, totalPages, loading]);
 
   const paginatedRows =
     total !== undefined

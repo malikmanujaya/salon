@@ -280,7 +280,7 @@ export default function ServicesPage() {
       <AppDataTable
         columns={columns}
         rows={rows}
-        loading={servicesQuery.isLoading}
+        loading={servicesQuery.isLoading || servicesQuery.isFetching}
         searchPlaceholder="Service, description, currency, staff"
         searchQuery={search}
         onSearch={(q) => setSearch(q)}

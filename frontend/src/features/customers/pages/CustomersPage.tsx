@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Box, Button, Chip, FormControlLabel, Stack, Switch } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { useQueryClient } from '@tanstack/react-query';
@@ -80,7 +80,14 @@ export default function CustomersPage() {
   );
 
   const rows = customersQuery.data?.items ?? [];
-  const total = customersQuery.data?.total ?? 0;
+  /** While React Query switches page keys, `data` can be briefly undefined; keep last total so pagination does not clamp page back to 1. */
+  const lastListTotalRef = useRef(0);
+  useEffect(() => {
+    if (customersQuery.data?.total != null) {
+      lastListTotalRef.current = customersQuery.data.total;
+    }
+  }, [customersQuery.data?.total]);
+  const total = customersQuery.data?.total ?? lastListTotalRef.current;
 
   const columns: AppTableColumn<CustomerSummary>[] = [
     { id: 'fullName', label: 'Name', minWidth: 180 },
@@ -257,7 +264,7 @@ export default function CustomersPage() {
       <AppDataTable
         columns={columns}
         rows={rows}
-        loading={customersQuery.isLoading}
+        loading={customersQuery.isLoading || customersQuery.isFetching}
         total={total}
         page={page}
         onPageChange={setPage}

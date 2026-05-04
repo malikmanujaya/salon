@@ -305,6 +305,7 @@ export default function StaffPage() {
       <AppDataTable
         columns={columns}
         rows={rows}
+        loading={membersQuery.isLoading || membersQuery.isFetching}
         searchPlaceholder="Name, email, phone, title"
         searchQuery={search}
         onSearch={(q) => setSearch(q)}

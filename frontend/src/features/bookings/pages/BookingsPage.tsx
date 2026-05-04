@@ -238,6 +238,7 @@ export default function BookingsPage() {
       <AppDataTable
         columns={columns}
         rows={rows}
+        loading={bookingsQuery.isLoading || bookingsQuery.isFetching}
         onRefresh={() => {
           if (!rangeError) {
             void bookingsQuery.refetch();

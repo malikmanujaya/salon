@@ -182,10 +182,23 @@ export function BookingFormDialog({
 
   const mergedCustomers = useMemo(() => {
     const map = new Map<string, CustomerSummary>();
+    // Edit flow: booking row includes `customer` but list prop may be paginated — always seed from it
+    // so Autocomplete can show the current customer's label.
+    if (initial?.customer) {
+      const c = initial.customer;
+      map.set(c.id, {
+        id: c.id,
+        fullName: c.fullName,
+        phone: c.phone,
+        email: c.email,
+        accountStatus: 'ACTIVE',
+        createdAt: '',
+      });
+    }
     for (const c of customers) map.set(c.id, c);
     for (const c of searchedCustomersQuery.data ?? []) map.set(c.id, c);
     return Array.from(map.values());
-  }, [customers, searchedCustomersQuery.data]);
+  }, [initial?.customer, customers, searchedCustomersQuery.data]);
 
   const customerOptions: LabeledSelectOption[] = useMemo(
     () => mergedCustomers.map((c) => ({ value: c.id, label: `${c.fullName} · ${c.phone}` })),
